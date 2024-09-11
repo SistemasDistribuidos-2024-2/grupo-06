@@ -5,7 +5,8 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/SistemasDistribuidos-2024-2/grupo-06/tree/main/app/logistica" // Ruta del paquete generado
+	pb "logistica/proto/grpc/proto"
+
 	"google.golang.org/grpc"
 )
 
