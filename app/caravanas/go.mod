@@ -1,4 +1,4 @@
-module facciones
+module caravanas
 
 go 1.21.1
 
