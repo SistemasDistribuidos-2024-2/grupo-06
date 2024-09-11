@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package raquis;
+
+option go_package = "https://github.com/SistemasDistribuidos-2024-2/grupo-06/app/finanzas";
+
+import "google/protobuf/empty.proto";
+import "proto/logistics.proto";
+
+// Mensajes
+message FinancialReportRequest {
+    string tracking_id = 1;
+    string status = 2;
+    double earnings = 3;
+    int32 attempts = 4;
+}
+
+message FinancialBalance {
+    double total_earnings = 1;
+    double total_losses = 2;
+}
+
+// Servicios
+service FinancialService {
+    rpc ReceiveReport(FinancialReportRequest) returns (google.protobuf.Empty);
+    rpc GetFinancialBalance(google.protobuf.Empty) returns (FinancialBalance);
+}
