@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package caravan;
 
-option go_package = "https://github.com/SistemasDistribuidos-2024-2/grupo-06/app/caravanas";
-
 import "proto/logistics.proto";
 import "google/protobuf/empty.proto";
 

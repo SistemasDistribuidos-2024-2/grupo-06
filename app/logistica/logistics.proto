@@ -2,9 +2,6 @@ syntax = "proto3";
 
 package logistics;
 
-// Opción para generar el código Go
-option go_package = "https://github.com/SistemasDistribuidos-2024-2/grupo-06/app/logistica";
-
 // Importa el tipo Empty de Google Protobuf
 import "google/protobuf/empty.proto";
 

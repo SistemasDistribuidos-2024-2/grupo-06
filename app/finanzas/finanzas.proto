@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package raquis;
 
-option go_package = "https://github.com/SistemasDistribuidos-2024-2/grupo-06/app/finanzas";
-
 import "google/protobuf/empty.proto";
 import "proto/logistics.proto";
 
