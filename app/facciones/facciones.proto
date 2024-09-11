@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package client;
+
+option go_package = "https://github.com/SistemasDistribuidos-2024-2/grupo-06/app/facciones";
+
+import "proto/logistics.proto";
+import "google/protobuf/empty.proto";
+
+// Mensajes
+message ClientOrder {
+    string order_id = 1;
+    string faction = 2;
+    string supply_type = 3;
+    int32 quantity = 4;
+    double value = 5;
+    string destination = 6;
+}
+
+// Servicios
+service ClientService {
+    rpc SendOrder(ClientOrder) returns (proto/logistics.OrderResponse);
+    rpc CheckPackageStatus(proto/logistics.TrackingRequest) returns (proto/logistics.TrackingResponse);
+}
