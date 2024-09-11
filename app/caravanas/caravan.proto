@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package caravan;
+
+option go_package = "https://github.com/SistemasDistribuidos-2024-2/grupo-06/app/caravanas";
+
+import "proto/logistics.proto";
+import "google/protobuf/empty.proto";
+
+// Mensajes
+message CaravanAssignment {
+    string tracking_id = 1;
+    string destination = 2;
+    int32 max_attempts = 3;
+}
+
+message CaravanResult {
+    string tracking_id = 1;
+    string status = 2; // Entregado, No entregado
+    int32 attempts = 3;
+    double earnings = 4;
+}
+
+// Servicios
+service CaravanService {
+    rpc AssignDelivery(CaravanAssignment) returns (google.protobuf.Empty);
+    rpc ReportDeliveryResult(CaravanResult) returns (google.protobuf.Empty);
+}
