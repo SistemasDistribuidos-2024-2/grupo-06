@@ -17,6 +17,6 @@ message ClientOrder {
 
 // Servicios
 service ClientService {
-    rpc SendOrder(ClientOrder) returns (proto/logistics.OrderResponse);
-    rpc CheckPackageStatus(proto/logistics.TrackingRequest) returns (proto/logistics.TrackingResponse);
+    rpc SendOrder(ClientOrder) returns (logistics.OrderResponse);
+    rpc CheckPackageStatus(logistics.TrackingRequest) returns (logistics.TrackingResponse);
 }
