@@ -95,34 +95,14 @@ func generateTrackingCode() string {
 	return "T" + time.Now().Format("20060102150405") + string(rand.Intn(1000))
 }
 
-func main() {
-
-	//----------------------------------------------------Servidor gRPC----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("Fallo al escuchar en el puerto %v: %v", port, err)
-	}
-
-	grpcServer := grpc.NewServer()
-	pb.RegisterLogisticsServiceServer(grpcServer, &logisticsServer{})
-
-	// Iniciar la asignación de paquetes a caravanas
-	srv := &logisticsServer{}
-	go srv.assignPackagesToCaravans()
-
-	log.Printf("Servidor de logística corriendo en %v", port)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
-	}
-
-	//----------------------------------------------------Servidor Rabbit MQ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+func startRabbitMQ() {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
+	log.Printf("A %v", port)
 
 	q, err := ch.QueueDeclare(
 		"paquetes_entregados", // name
@@ -158,6 +138,30 @@ func main() {
 	log.Printf(" [x] Sent %s\n", body)
 }
 
+func main() {
+	//----------------------------------------------------Servidor gRPC----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("Fallo al escuchar en el puerto %v: %v", port, err)
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterLogisticsServiceServer(grpcServer, &logisticsServer{})
+
+	// Iniciar la asignación de paquetes a caravanas
+	srv := &logisticsServer{}
+	go srv.assignPackagesToCaravans()
+
+	// Iniciar RabbitMQ en una goroutine
+	go startRabbitMQ()
+
+	log.Printf("Servidor de logística corriendo en %v", port)
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Printf("A %v", port)
+		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
+	}
+}
+
 // Añadir función para manejar errores en RabbitMQ
 func failOnError(err error, msg string) {
 	if err != nil {
@@ -172,5 +176,4 @@ type Paquete struct {
 	Intentos int     `json:"intentos"`
 	Estado   string  `json:"estado"`   // "entregado" o "no_entregado"
 	Servicio string  `json:"servicio"` // "Ostronitas" o "Grineer Normal, Grineer Prioritario"
-
 }
