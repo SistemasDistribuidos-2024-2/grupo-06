@@ -102,7 +102,6 @@ func startRabbitMQ() {
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
-	log.Printf("A %v", port)
 
 	q, err := ch.QueueDeclare(
 		"paquetes_entregados", // name
@@ -155,7 +154,7 @@ func main() {
 	// Iniciar RabbitMQ en una goroutine
 	go startRabbitMQ()
 
-	log.Printf("Servidor de logística corriendo en %v", port)
+	log.Printf("RabbitMQ:Servidor de logística corriendo en %v", port)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Printf("A %v", port)
 		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
