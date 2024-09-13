@@ -53,14 +53,6 @@ message DeliveryStatus {
     int32 intentos = 3;
 }
 
-// Mensaje para reportar las entregas al sistema financiero (Raquis)
-message FinancialReport {
-    string id_paquete = 1;
-    string estado = 2; // Entregado, No Entregado
-    int32 intentos = 3;
-    int32 valor = 4;
-    int32 perdidas = 5; // Costo de los intentos fallidos
-}
 
 // Servicios utilizados para la comunicación
 
@@ -82,8 +74,3 @@ service CaravanService {
     rpc ReportDeliveryStatus(DeliveryStatus) returns (google.protobuf.Empty);
 }
 
-// Servicio entre el Sistema Logístico y el sistema financiero Raquis
-service FinancialService {
-    // El sistema logístico reporta las entregas al sistema financiero Raquis
-    rpc ReportDelivery(FinancialReport) returns (google.protobuf.Empty);
-}
