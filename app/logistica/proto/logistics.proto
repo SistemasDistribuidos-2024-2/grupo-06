@@ -1,11 +1,13 @@
 syntax = "proto3";
-
+//Ruta en donde estarán los archivos necesarios que va a utilizar PF una vez ejecutado
 option go_package = "grpc/proto";
 
 package logistics;
 
 import "google/protobuf/empty.proto";
 // Mensajes utilizados para la comunicación
+
+//CUERPO DE LOS MENSAJES PARA LAS OPERACIONES DE LOS SERVICIOS
 
 // Mensaje para los paquetes enviados por las facciones (clientes)
 message PackageOrder {
