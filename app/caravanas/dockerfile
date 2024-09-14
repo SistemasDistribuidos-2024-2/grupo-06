@@ -10,8 +10,8 @@ RUN go mod tidy
 #Construyo el binario
 RUN go build -o caravanas
 
-#Logistica es un servidor,por ende debo exponer el puerto
-EXPOSE 8080
+#caravanas tambien se comporta como servidor,por ende debo exponer el puerto
+EXPOSE 50052
 
 #Ejecuto el build creado
 CMD ["./caravanas"]
