@@ -1,10 +1,17 @@
-FROM golang:1.23.1
+FROM golang:latest
 
 WORKDIR /app
-
+#Copio todo lo que esta en el directorio actual
 COPY . .
 
+
+#Ejecuto el siguiente comando. Nos aseguramos que todas las dependencias esten alineadas
 RUN go mod tidy
+#Construyo el binario
 RUN go build -o finanzas
 
+#Logistica es un servidor,por ende debo exponer el puerto
+EXPOSE 8080
+
+#Ejecuto el build creado
 CMD ["./finanzas"]
