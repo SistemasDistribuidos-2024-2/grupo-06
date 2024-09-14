@@ -15,7 +15,7 @@ services:
     container_name: container_caravanas
     ports:
         #Aqui faltan los puertos que caravanas va a exponer
-      - "8080:8080"
+      - "50052:50052"
     #depends_on: Caravanas No se incia antes de...logistica
     depends_on:
       - logistica
@@ -27,8 +27,8 @@ services:
   facciones:
     build: ./facciones
     container_name: container_facciones
-    ports:
-      - "8080:8080"
+    #ports:
+    #  - "8080:8080"
     networks:
       - network_tarea
     depends_on:
@@ -36,8 +36,8 @@ services:
   finanzas:
     build: ./finanzas
     container_name: container_finanzas
-    ports:
-      - "8080:8080"
+    #ports:
+    #  - "8080:8080"
     depends_on:
       - logistica
     networks:
