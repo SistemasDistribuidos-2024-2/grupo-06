@@ -10,8 +10,7 @@ RUN go mod tidy
 #Construyo el binario
 RUN go build -o logistica
 
-#Logistica es un servidor,por ende debo exponer el puerto
-EXPOSE 8080
+#Facciones no escucha peticiones, por ende no necesita exponer un puerto
 
 #Ejecuto el build creado
 CMD ["./facciones"]
