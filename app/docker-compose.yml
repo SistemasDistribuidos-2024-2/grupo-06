@@ -14,7 +14,6 @@ services:
     build: ./caravanas
     container_name: container_caravanas
     ports:
-        #Aqui faltan los puertos que caravanas va a exponer
       - "50052:50052"
     #depends_on: Caravanas No se incia antes de...logistica
     depends_on:
