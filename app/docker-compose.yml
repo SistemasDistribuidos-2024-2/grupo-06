@@ -1,0 +1,48 @@
+version: '3'
+services:
+  logistica:
+    build: ./logistica
+    container_name: container_logistica
+    ports:
+      #Aqui faltan los puertos que logistica va a exponer
+      - "8080:8080"
+    depends_on:
+      - facciones
+    networks:
+      - network_tarea
+  caravanas:
+    build: ./caravanas
+    container_name: container_caravanas
+    ports:
+        #Aqui faltan los puertos que caravanas va a exponer
+      - "8080:8080"
+    #depends_on: Caravanas No se incia antes de...logistica
+    depends_on:
+      - logistica
+    networks:
+      - network_tarea
+    #enviorment: Variables de entorno
+    environment:
+      - SERVER_HOST=container_logistica
+  facciones:
+    build: ./facciones
+    container_name: container_facciones
+    ports:
+      - "8080:8080"
+    networks:
+      - network_tarea
+  finanzas:
+    build: ./finanzas
+    container_name: container_finanzas
+    ports:
+      - "8080:8080"
+    depends_on:
+      - logistica
+    networks:
+      - network_tarea
+#Red EXTERNA que se crea mediante docker
+networks:
+  network_tarea:
+    external: true
+    
+
