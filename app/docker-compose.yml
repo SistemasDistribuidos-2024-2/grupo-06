@@ -5,9 +5,9 @@ services:
     container_name: container_logistica
     ports:
       #Aqui faltan los puertos que logistica va a exponer
-      - "8080:8080"
-    depends_on:
-      - facciones
+      - "50051:50051"
+    #depends_on:
+    # - facciones
     networks:
       - network_tarea
   caravanas:
@@ -31,6 +31,8 @@ services:
       - "8080:8080"
     networks:
       - network_tarea
+    depends_on:
+      - logistica
   finanzas:
     build: ./finanzas
     container_name: container_finanzas
