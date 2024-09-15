@@ -81,18 +81,31 @@ func (s *logisticsServer) SendOrder(ctx context.Context, order *pb.PackageOrder)
 	}, nil
 }
 
+// failOnError logs the error message and exits the application if an error occurs.
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
+}
+
 // Función para enviar un paquete a RabbitMQ
 func sendToRabbitMQ(order *pb.PackageOrder) error {
-	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
-	if err != nil {
-		return fmt.Errorf("error conectando a RabbitMQ: %v", err)
+	var conn *amqp.Connection
+	var err error
+	// Intentar conectarse a RabbitMQ con reintentos
+	for i := 0; i < 10; i++ {
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/")
+		if err == nil {
+			log.Printf("Servidor Rabbit MQ conectado exitosamente")
+			break
+		}
+		log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
+		time.Sleep(5 * time.Second)
 	}
+	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
-
 	ch, err := conn.Channel()
-	if err != nil {
-		return fmt.Errorf("error abriendo canal en RabbitMQ: %v", err)
-	}
+	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
@@ -295,13 +308,13 @@ func main() {
 	go srv.assignPackagesToCaravans()
 
 	// Iniciar RabbitMQ en una goroutine
-/* 	go startRabbitMQ()
+	/* 	go startRabbitMQ()
 
-	log.Printf("RabbitMQ:Servidor de logística corriendo en %v", port)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Printf("A %v", port)
-		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
-	} */
+	   	log.Printf("RabbitMQ:Servidor de logística corriendo en %v", port)
+	   	if err := grpcServer.Serve(lis); err != nil {
+	   		log.Printf("A %v", port)
+	   		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
+	   	} */
 	log.Printf("Servidor de logística corriendo en %v", port)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
