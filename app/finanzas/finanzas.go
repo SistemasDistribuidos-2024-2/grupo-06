@@ -48,69 +48,85 @@ var finanzas = RegistroFinanzas{
 }
 
 func main() {
-	var conn *amqp.Connection
-	var err error
-	// Intentar conectarse a RabbitMQ con reintentos
-	for i := 0; i < 10; i++ {
-		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/")
-		if err == nil {
-			log.Printf("Conexión exitosa a RabbitMQ desde finanzas")
-			break
-		}
-		log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
-		time.Sleep(5 * time.Second)
-	}
+    var conn *amqp.Connection
+    var err error
+    for i := 0; i < 10; i++ {
+        conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+        if err == nil {
+            log.Printf("Servidor Rabbit MQ conectado exitosamente")
+            break
+        }
+        log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
+        time.Sleep(5 * time.Second)
+    }
 
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-	//Declaramos la misma cola que en el productor, se declara ya que se pod´ria ejecutar antes el consumidor que el productor
-	q, err := ch.QueueDeclare(
-		"paquetes_entregados", // name
-		false,                 // durable
-		false,                 // delete when unused
-		false,                 // exclusive
-		false,                 // no-wait
-		nil,                   // arguments
-	)
-	failOnError(err, "Failed to declare a queue")
+    ch, err := conn.Channel()
+    failOnError(err, "Failed to open a channel")
+    defer ch.Close()
 
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		false,  // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
-	failOnError(err, "Failed to register a consumer")
+    q, err := ch.QueueDeclare(
+        "paquetes_entregados", 
+        false, 
+        false, 
+        false, 
+        false, 
+        nil,
+    )
+    failOnError(err, "Failed to declare a queue")
 
-	var forever chan struct{}
+    msgs, err := ch.Consume(
+        q.Name, 
+        "",     
+        false,  // auto-ack manual para controlar el cierre
+        false,  
+        false,  
+        false,  
+        nil,    
+    )
+    failOnError(err, "Failed to register a consumer")
 
-	go func() {
-		for d := range msgs {
-			// Deserializar el mensaje JSON a la estructura Paquete
-			var paquete Paquete
-			err := json.Unmarshal(d.Body, &paquete)
-			if err != nil {
-				log.Printf("Error al deserializar el mensaje: %s", err)
-				continue
-			}
+    var forever chan struct{}
+    go func() {
+        for d := range msgs {
+            if string(d.Body) == "END" {
+                log.Printf("Recibido mensaje de terminación. Cerrando consumidor de mensajes.")
+                // Confirma manualmente el mensaje de terminación
+                d.Ack(false)
+                break
+            }
 
-			// Procesar el paquete recibido según la lógica del laboratorio
-			procesarPaquete(paquete)
+            // Deserializar el mensaje JSON a la estructura Paquete
+            var paquete Paquete
+            err := json.Unmarshal(d.Body, &paquete)
+            if err != nil {
+                log.Printf("Error al deserializar el mensaje: %s", err)
+                d.Nack(false, false)
+                continue
+            }
 
-			d.Ack(false)
-		}
-	}()
+            // Procesar el paquete
+            procesarPaquete(paquete)
 
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	//Cuando termine su ejecución, imprimir el balance final y los intentos por paquete
-	defer imprimirBalanceFinal()
-	defer imprimirIntentos()
-	<-forever
+            // Confirmar manualmente que el mensaje fue procesado correctamente
+            d.Ack(false)
+        }
+
+        // Imprimir balance final y terminar el programa
+        imprimirBalanceFinal()
+        imprimirIntentos()
+
+        // Cerrar el canal y la conexión a RabbitMQ
+        ch.Close()
+        conn.Close()
+
+        // Cerrar el programa
+        close(forever)
+    }()
+
+    log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+    <-forever
 }
+
 
 // Actualizar los registros en memoria con cada paquete procesado
 func procesarPaquete(paquete Paquete) {

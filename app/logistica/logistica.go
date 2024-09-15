@@ -293,6 +293,50 @@ func generateTrackingCode() string {
 	log.Printf(" [x] Sent %s\n", body)
 } */
 
+func sendTerminationMessage() error {
+    conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+    if err != nil {
+        return fmt.Errorf("error conectando a RabbitMQ: %v", err)
+    }
+    defer conn.Close()
+
+    ch, err := conn.Channel()
+    if err != nil {
+        return fmt.Errorf("error abriendo canal en RabbitMQ: %v", err)
+    }
+    defer ch.Close()
+
+    q, err := ch.QueueDeclare(
+        "paquetes_entregados", 
+        false, 
+        false, 
+        false, 
+        false, 
+        nil,
+    )
+    if err != nil {
+        return fmt.Errorf("error declarando cola: %v", err)
+    }
+
+    // Mensaje especial que indica que se terminó el procesamiento
+    terminationMessage := "END"
+    err = ch.Publish(
+        "",     // exchange
+        q.Name, // routing key
+        false,  // mandatory
+        false,  // immediate
+        amqp.Publishing{
+            ContentType: "text/plain",
+            Body:        []byte(terminationMessage),
+        })
+    if err != nil {
+        return fmt.Errorf("error publicando en RabbitMQ: %v", err)
+    }
+
+    log.Printf("Se envió el mensaje de terminación a RabbitMQ")
+    return nil
+}
+
 func main() {
 	//----------------------------------------------------Servidor gRPC----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	lis, err := net.Listen("tcp", port)
