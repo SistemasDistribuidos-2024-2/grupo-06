@@ -1,0 +1,4 @@
+0001,Ostronitas,Choripán,200,Escolta1,Destino1,123
+0002,Normal,Anticucho,450,Escolta2,Destino5,777
+0003,Prioritario,Pan,100,Escolta1,Destino2,465
+0004,Prioritario,Coca-Cola,75,Escolta2,Destino1,768

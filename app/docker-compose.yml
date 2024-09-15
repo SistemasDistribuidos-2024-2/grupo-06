@@ -15,6 +15,7 @@ services:
     container_name: container_caravanas
     ports:
       - "50052:50052"
+      -  "5672:5672"
     #depends_on: Caravanas No se incia antes de...logistica
     depends_on:
       - logistica
