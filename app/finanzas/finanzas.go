@@ -78,7 +78,7 @@ func main() {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,   // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -100,6 +100,8 @@ func main() {
 
 			// Procesar el paquete recibido según la lógica del laboratorio
 			procesarPaquete(paquete)
+
+			d.Ack(false)
 		}
 	}()
 
