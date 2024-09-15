@@ -13,7 +13,7 @@ const (
 	address = "localhost:50051" //Aqui debería ir la dirrecion del contenedor de logistica ejemplo: "distXYZ:50051"
 )
 
-func sendOrder(client pb.LogisticsServiceClient) {
+func sendOrder(client pb.LogisticsServiceClient) string {
 	// Ejemplo de envío de una orden por parte de una facción (Ostronitas o Grineer)
 	order := &pb.PackageOrder{
 		IdPaquete:        "001",
@@ -29,6 +29,7 @@ func sendOrder(client pb.LogisticsServiceClient) {
 		log.Fatalf("Error al enviar la orden: %v", err)
 	}
 	log.Printf("Orden enviada exitosamente. Código de seguimiento: %s\n", resp.CodigoSeguimiento)
+	return resp.CodigoSeguimiento
 }
 
 func checkOrderStatus(client pb.LogisticsServiceClient, codigoSeguimiento string) {
@@ -55,12 +56,12 @@ func main() {
 
 	client := pb.NewLogisticsServiceClient(conn)
 
-	// Enviar una orden
-	sendOrder(client)
+	// Enviar una orden y obtener el código de seguimiento
+	codigoSeguimiento := sendOrder(client)	
 
 	// Simulación de espera antes de consultar el estado
 	time.Sleep(2 * time.Second)
 
 	// Consultar el estado de la orden
-	checkOrderStatus(client, "123456")
+	checkOrderStatus(client, codigoSeguimiento)
 }
