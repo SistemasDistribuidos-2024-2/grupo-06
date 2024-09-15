@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	address = "localhost:50051" //Aqui debería ir la dirrecion del contenedor de logistica ejemplo: "dist021:50051"
+	address = "container_logistica:50051" //Aqui debería ir la dirrecion del contenedor de logistica ejemplo: "dist021:50051"
 )
 
 func sendOrder(client pb.LogisticsServiceClient) string {
