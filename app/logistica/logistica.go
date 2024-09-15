@@ -180,16 +180,16 @@ func (s *logisticsServer) assignPackagesToCaravans() {
 		var packageToAssign *pb.PackageOrder
 
 		// Seleccionar el primer paquete disponible en las colas
-		if len(s.ostronitasQueue) > 0 {
-			packageToAssign = s.ostronitasQueue[0]
-			s.ostronitasQueue = s.ostronitasQueue[1:]
-		} else if len(s.prioritarioQueue) > 0 {
-			packageToAssign = s.prioritarioQueue[0]
-			s.prioritarioQueue = s.prioritarioQueue[1:]
-		} else if len(s.normalQueue) > 0 {
-			packageToAssign = s.normalQueue[0]
-			s.normalQueue = s.normalQueue[1:]
-		}
+        if len(s.prioritarioQueue) > 0 {
+            packageToAssign = s.prioritarioQueue[0]
+            s.prioritarioQueue = s.prioritarioQueue[1:]
+        } else if len(s.ostronitasQueue) > 0 {
+            packageToAssign = s.ostronitasQueue[0]
+            s.ostronitasQueue = s.ostronitasQueue[1:]
+        } else if len(s.normalQueue) > 0 {
+            packageToAssign = s.normalQueue[0]
+            s.normalQueue = s.normalQueue[1:]
+        }
 
 		if packageToAssign != nil {
 			// Crear la instrucción de entrega
