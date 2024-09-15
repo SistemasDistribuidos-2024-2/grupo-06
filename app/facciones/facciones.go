@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	address = "localhost:50051" //Aqui debería ir la dirrecion del contenedor de logistica ejemplo: "distXYZ:50051"
+	address = "container_logistica:50051" //Aqui debería ir la dirrecion del contenedor de logistica ejemplo: "dist021:50051"
 )
 
 func sendOrder(client pb.LogisticsServiceClient) string {
@@ -57,7 +57,7 @@ func main() {
 	client := pb.NewLogisticsServiceClient(conn)
 
 	// Enviar una orden y obtener el código de seguimiento
-	codigoSeguimiento := sendOrder(client)	
+	codigoSeguimiento := sendOrder(client)
 
 	// Simulación de espera antes de consultar el estado
 	time.Sleep(2 * time.Second)

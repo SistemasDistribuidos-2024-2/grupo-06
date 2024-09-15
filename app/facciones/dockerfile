@@ -8,9 +8,9 @@ COPY . .
 #Ejecuto el siguiente comando. Nos aseguramos que todas las dependencias esten alineadas
 RUN go mod tidy
 #Construyo el binario
-RUN go build -o logistica
+RUN go build -o facciones
 
-#Facciones no escucha peticiones, por ende no necesita exponer un puerto
+#Facciones no
 
 #Ejecuto el build creado
 CMD ["./facciones"]

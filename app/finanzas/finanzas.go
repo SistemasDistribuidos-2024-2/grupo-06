@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -47,10 +48,18 @@ var finanzas = RegistroFinanzas{
 }
 
 func main() {
-
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
+	var conn *amqp.Connection
+	var err error
+	// Intentar conectarse a RabbitMQ con reintentos
+	for i := 0; i < 10; i++ {
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+		if err == nil {
+			log.Printf("Servidor Rabbit MQ conectado exitosamente")
+			break
+		}
+		log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
+		time.Sleep(5 * time.Second)
+	}
 
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
@@ -69,7 +78,7 @@ func main() {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		false,   // auto-ack
+		true,   // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -91,8 +100,6 @@ func main() {
 
 			// Procesar el paquete recibido según la lógica del laboratorio
 			procesarPaquete(paquete)
-
-			d.Ack(false)
 		}
 	}()
 

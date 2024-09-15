@@ -3,19 +3,23 @@ services:
   logistica:
     build: ./logistica
     container_name: container_logistica
-    ports:
-      #Aqui faltan los puertos que logistica va a exponer
-      - "50051:50051"
-    #depends_on:
-    # - facciones
+    depends_on:
+      - rabbitmq
     networks:
       - network_tarea
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+    networks:
+      - network_tarea
+    
   caravanas:
     build: ./caravanas
     container_name: container_caravanas
     ports:
       - "50052:50052"
-      -  "5672:5672"
     #depends_on: Caravanas No se incia antes de...logistica
     depends_on:
       - logistica
