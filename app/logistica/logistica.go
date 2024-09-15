@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	pb "logistica/proto/grpc/proto"
 	"math/rand"
@@ -21,29 +22,52 @@ const (
 type logisticsServer struct {
 	pb.UnimplementedLogisticsServiceServer
 	// Colas para los paquetes
-	ostronitasQueue  []pb.PackageOrder
-	prioritarioQueue []pb.PackageOrder
-	normalQueue      []pb.PackageOrder
+	ostronitasQueue  []*pb.PackageOrder
+	prioritarioQueue []*pb.PackageOrder
+	normalQueue      []*pb.PackageOrder
 	// Mutex para manejar concurrencia en las colas
 	mu sync.Mutex
 }
+
+type PaqueteSeguimiento struct {
+	CodigoSeguimiento string
+	IdPaquete         string
+	Faccion           string
+	TipoPaquete       string
+	Estado            string
+	IdCaravana        string
+	Intentos          int
+}
+
+var seguimientoPaquetes = make(map[string]PaqueteSeguimiento)
 
 // Implementación del método para recibir órdenes de facciones
 func (s *logisticsServer) SendOrder(ctx context.Context, order *pb.PackageOrder) (*pb.OrderResponse, error) {
 	log.Printf("Recibida orden de la facción: %s, paquete: %s\n", order.Faccion, order.IdPaquete)
 
+	codigoSeguimiento := generateTrackingCode()
+
+	// Almacenar en el registro de seguimiento
+	seguimientoPaquetes[codigoSeguimiento] = PaqueteSeguimiento{
+		CodigoSeguimiento: codigoSeguimiento,
+		IdPaquete:         order.IdPaquete,
+		Faccion:           order.Faccion,
+		TipoPaquete:       order.TipoPaquete,
+		Estado:            "En Cetus",
+		IdCaravana:        "",
+		Intentos:          0,
+	}
+
 	// Asignar la orden a la cola correspondiente
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if order.Faccion == "Ostronitas" {
-		s.ostronitasQueue = append(s.ostronitasQueue, *order)
+		s.ostronitasQueue = append(s.ostronitasQueue, order)
 	} else if order.TipoPaquete == "Prioritario" {
-		s.prioritarioQueue = append(s.prioritarioQueue, *order)
+		s.prioritarioQueue = append(s.prioritarioQueue, order)
 	} else {
-		s.normalQueue = append(s.normalQueue, *order)
+		s.normalQueue = append(s.normalQueue, order)
 	}
-
-	codigoSeguimiento := generateTrackingCode()
 
 	return &pb.OrderResponse{
 		CodigoSeguimiento: codigoSeguimiento,
@@ -59,35 +83,80 @@ func (s *logisticsServer) CheckOrderStatus(ctx context.Context, req *pb.Tracking
 	//Este estado servira para colocarlo en la cola y enviarlo a finanzas
 	//Aqui tengo que hacer una instancia del Paquete struct!
 
+	paquete, existe := seguimientoPaquetes[req.CodigoSeguimiento]
+	if !existe {
+		return nil, fmt.Errorf("no se encontró el paquete con el código de seguimiento %s", req.CodigoSeguimiento)
+	}
+
 	return &pb.TrackingResponse{
-		Estado:     "En camino",
-		IdCaravana: "Caravana 1",
-		Intentos:   1,
+		Estado:     paquete.Estado,
+		IdCaravana: paquete.IdCaravana,
+		Intentos:   int32(paquete.Intentos),
 	}, nil
+}
+
+// Función para crear la conexión gRPC con las caravanas
+func connectToCaravans() (pb.CaravanServiceClient, *grpc.ClientConn, error) {
+	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
+	if err != nil {
+		return nil, nil, err
+	}
+	client := pb.NewCaravanServiceClient(conn)
+	return client, conn, nil
 }
 
 // Función para asignar paquetes a caravanas
 func (s *logisticsServer) assignPackagesToCaravans() {
+	caravanClient, conn, err := connectToCaravans() // Establecer conexión gRPC con las caravanas
+	if err != nil {
+		log.Fatalf("No se pudo conectar al servicio de caravanas: %v", err)
+	}
+	defer conn.Close()
 	for {
 		s.mu.Lock()
+		var packageToAssign *pb.PackageOrder
+
+		// Seleccionar el primer paquete disponible en las colas
 		if len(s.ostronitasQueue) > 0 {
-			log.Println("Asignando paquete de ostronitas a una caravana...")
-			// Aquí enviaríamos el paquete a una caravana a través del gRPC de Caravanas
-			// ...
+			packageToAssign = s.ostronitasQueue[0]
 			s.ostronitasQueue = s.ostronitasQueue[1:]
 		} else if len(s.prioritarioQueue) > 0 {
-			log.Println("Asignando paquete prioritario a una caravana...")
-			// Aquí enviaríamos el paquete prioritario a una caravana
-			// ...
+			packageToAssign = s.prioritarioQueue[0]
 			s.prioritarioQueue = s.prioritarioQueue[1:]
 		} else if len(s.normalQueue) > 0 {
-			log.Println("Asignando paquete normal a una caravana...")
-			// Aquí enviaríamos el paquete normal a una caravana
-			// ...
+			packageToAssign = s.normalQueue[0]
 			s.normalQueue = s.normalQueue[1:]
 		}
+
+		if packageToAssign != nil {
+			// Crear la instrucción de entrega
+			instruction := &pb.DeliveryInstruction{
+				IdPaquete:       packageToAssign.IdPaquete,
+				TipoCaravana:    packageToAssign.TipoPaquete, // Aquí puedes definir el tipo de caravana según la lógica de tu negocio
+				WarframeEscolta: "Excalibur",                 // Puedes cambiar esto según lo que quieras enviar como escolta
+				Destino:         packageToAssign.Destino,
+				TipoPaquete:     packageToAssign.TipoPaquete,
+				Seguimiento:     seguimientoPaquetes[packageToAssign.IdPaquete].CodigoSeguimiento, // Usa el código de seguimiento real
+				Valor:           packageToAssign.ValorSuministro,
+			}
+
+			// Asignar el paquete a la caravana llamando a gRPC
+			log.Printf("Asignando paquete %s a la caravana\n", packageToAssign.IdPaquete)
+			response, err := caravanClient.AssignDelivery(context.Background(), instruction)
+			if err != nil {
+				log.Printf("Error asignando el paquete a la caravana: %v", err)
+			} else {
+				log.Printf("Paquete %s entregado con estado: %s, intentos: %d\n", response.IdPaquete, response.Estado, response.Intentos)
+
+				// Aquí podrías actualizar el estado del paquete en el sistema logístico según la respuesta
+				seguimiento := seguimientoPaquetes[packageToAssign.IdPaquete]
+				seguimiento.Estado = response.Estado
+				seguimiento.Intentos = int(response.Intentos)
+				seguimientoPaquetes[packageToAssign.IdPaquete] = seguimiento
+			}
+		}
 		s.mu.Unlock()
-		time.Sleep(2 * time.Second) // Simulación de tiempo de espera entre asignaciones
+		time.Sleep(2 * time.Second) // Simulación de tiempo entre asignaciones
 	}
 }
 
@@ -123,7 +192,7 @@ func startRabbitMQ() {
 		Servicio: "Ostronitas",
 	}
 
-	body, err := json.Marshal(paquete)
+	body, _ := json.Marshal(paquete)
 	err = ch.PublishWithContext(ctx,
 		"",     // exchange
 		q.Name, // routing key
