@@ -165,7 +165,18 @@ func generateTrackingCode() string {
 }
 
 func startRabbitMQ() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	var conn *amqp.Connection
+	var err error
+	// Intentar conectarse a RabbitMQ con reintentos
+	for i := 0; i < 10; i++ {
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+		if err == nil {
+			log.Printf("Servidor Rabbit MQ conectado exitosamente")
+			break
+		}
+		log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
+		time.Sleep(5 * time.Second)
+	}
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 	ch, err := conn.Channel()

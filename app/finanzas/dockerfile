@@ -11,7 +11,6 @@ RUN go mod tidy
 RUN go build -o finanzas
 
 #Logistica es un servidor,por ende debo exponer el puerto
-EXPOSE 8080
 
 #Ejecuto el build creado
 CMD ["./finanzas"]
