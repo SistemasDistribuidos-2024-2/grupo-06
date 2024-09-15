@@ -52,9 +52,9 @@ func main() {
 	var err error
 	// Intentar conectarse a RabbitMQ con reintentos
 	for i := 0; i < 10; i++ {
-		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/")
 		if err == nil {
-			log.Printf("Servidor Rabbit MQ conectado exitosamente")
+			log.Printf("Conexión exitosa a RabbitMQ desde finanzas")
 			break
 		}
 		log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
@@ -78,7 +78,7 @@ func main() {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		false,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
