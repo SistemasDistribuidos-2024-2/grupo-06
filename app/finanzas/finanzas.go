@@ -90,22 +90,21 @@ func main() {
 		for d := range msgs {
 			// Deserializar el mensaje JSON a la estructura Paquete
 			var paquete Paquete
-			if paquete.ID == "0" {
-				log.Printf("Fin del programa")
-				// Imprimir balance final y terminar el programa
-				log.Printf("BalanceFinal")
-				imprimirBalanceFinal()
-				log.Printf("ImprimirIntentos")
-				imprimirIntentos()
-				break
-			}
 			err := json.Unmarshal(d.Body, &paquete)
 			if err != nil {
 				log.Printf("Error al deserializar el mensaje: %s", err)
 				d.Nack(false, false)
 				continue
 			}
-
+			if paquete.ID == "0" {
+				log.Printf("Fin del programa")
+				// Imprimir balance final y terminar el programa
+				log.Printf("BalanceFinal")
+				imprimirBalanceFinal()
+				log.Printf("Imprimir Intentos")
+				imprimirIntentos()
+				break
+			}
 			// Procesar el paquete
 			procesarPaquete(paquete)
 
