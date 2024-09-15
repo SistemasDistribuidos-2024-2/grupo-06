@@ -69,10 +69,73 @@ func (s *logisticsServer) SendOrder(ctx context.Context, order *pb.PackageOrder)
 		s.normalQueue = append(s.normalQueue, order)
 	}
 
+	// Enviar paquete a RabbitMQ
+	err := sendToRabbitMQ(order)
+	if err != nil {
+		log.Printf("Error al enviar a RabbitMQ: %v", err)
+	}
+
 	return &pb.OrderResponse{
 		CodigoSeguimiento: codigoSeguimiento,
 		Mensaje:           "Orden procesada exitosamente",
 	}, nil
+}
+
+// Función para enviar un paquete a RabbitMQ
+func sendToRabbitMQ(order *pb.PackageOrder) error {
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+	if err != nil {
+		return fmt.Errorf("error conectando a RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		return fmt.Errorf("error abriendo canal en RabbitMQ: %v", err)
+	}
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		"paquetes_entregados", // name
+		false,                 // durable
+		false,                 // delete when unused
+		false,                 // exclusive
+		false,                 // no-wait
+		nil,                   // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("error declarando cola: %v", err)
+	}
+
+	// Crear el paquete en formato JSON para enviarlo a finanzas
+	paquete := Paquete{
+		ID:       order.IdPaquete,
+		Valor:    float64(order.ValorSuministro),
+		Intentos: 1,
+		Estado:   "enviado",
+		Servicio: order.Faccion,
+	}
+
+	body, err := json.Marshal(paquete)
+	if err != nil {
+		return fmt.Errorf("error serializando paquete: %v", err)
+	}
+
+	err = ch.Publish(
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	if err != nil {
+		return fmt.Errorf("error publicando en RabbitMQ: %v", err)
+	}
+
+	log.Printf("Paquete enviado a RabbitMQ: %s\n", body)
+	return nil
 }
 
 // Implementación del método para consultar el estado de los paquetes
@@ -164,7 +227,7 @@ func generateTrackingCode() string {
 	return "T" + time.Now().Format("20060102150405") + string(rand.Intn(1000))
 }
 
-func startRabbitMQ() {
+/* func startRabbitMQ() {
 	var conn *amqp.Connection
 	var err error
 	// Intentar conectarse a RabbitMQ con reintentos
@@ -215,7 +278,7 @@ func startRabbitMQ() {
 		})
 	failOnError(err, "Failed to publish a message")
 	log.Printf(" [x] Sent %s\n", body)
-}
+} */
 
 func main() {
 	//----------------------------------------------------Servidor gRPC----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -232,21 +295,25 @@ func main() {
 	go srv.assignPackagesToCaravans()
 
 	// Iniciar RabbitMQ en una goroutine
-	go startRabbitMQ()
+/* 	go startRabbitMQ()
 
 	log.Printf("RabbitMQ:Servidor de logística corriendo en %v", port)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Printf("A %v", port)
 		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
+	} */
+	log.Printf("Servidor de logística corriendo en %v", port)
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("Fallo al iniciar el servidor gRPC: %v", err)
 	}
 }
 
 // Añadir función para manejar errores en RabbitMQ
-func failOnError(err error, msg string) {
+/* func failOnError(err error, msg string) {
 	if err != nil {
 		log.Panicf("%s: %s", msg, err)
 	}
-}
+} */
 
 // Definir estructura para manejar el paquete en la cola de RabbitMQ
 type Paquete struct {
