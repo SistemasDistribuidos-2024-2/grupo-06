@@ -48,85 +48,82 @@ var finanzas = RegistroFinanzas{
 }
 
 func main() {
-    var conn *amqp.Connection
-    var err error
-    for i := 0; i < 10; i++ {
-        conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
-        if err == nil {
-            log.Printf("Servidor Rabbit MQ conectado exitosamente")
-            break
-        }
-        log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
-        time.Sleep(5 * time.Second)
-    }
+	var conn *amqp.Connection
+	var err error
+	for i := 0; i < 10; i++ {
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/")
+		if err == nil {
+			log.Printf("Servidor Rabbit MQ conectado exitosamente")
+			break
+		}
+		log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
+		time.Sleep(5 * time.Second)
+	}
 
-    ch, err := conn.Channel()
-    failOnError(err, "Failed to open a channel")
-    defer ch.Close()
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
 
-    q, err := ch.QueueDeclare(
-        "paquetes_entregados", 
-        false, 
-        false, 
-        false, 
-        false, 
-        nil,
-    )
-    failOnError(err, "Failed to declare a queue")
+	q, err := ch.QueueDeclare(
+		"paquetes_entregados",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to declare a queue")
 
-    msgs, err := ch.Consume(
-        q.Name, 
-        "",     
-        false,  // auto-ack manual para controlar el cierre
-        false,  
-        false,  
-        false,  
-        nil,    
-    )
-    failOnError(err, "Failed to register a consumer")
+	msgs, err := ch.Consume(
+		q.Name,
+		"",
+		false, // auto-ack manual para controlar el cierre
+		false,
+		false,
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to register a consumer")
 
-    var forever chan struct{}
-    go func() {
-        for d := range msgs {
-            if string(d.Body) == "END" {
-                log.Printf("Recibido mensaje de terminación. Cerrando consumidor de mensajes.")
-                // Confirma manualmente el mensaje de terminación
-                d.Ack(false)
-                break
-            }
+	var forever chan struct{}
+	go func() {
+		for d := range msgs {
+			// Deserializar el mensaje JSON a la estructura Paquete
+			var paquete Paquete
+			if paquete.ID == "0" {
+				log.Printf("Fin del programa")
+				// Imprimir balance final y terminar el programa
+				log.Printf("BalanceFinal")
+				imprimirBalanceFinal()
+				log.Printf("ImprimirIntentos")
+				imprimirIntentos()
+				break
+			}
+			err := json.Unmarshal(d.Body, &paquete)
+			if err != nil {
+				log.Printf("Error al deserializar el mensaje: %s", err)
+				d.Nack(false, false)
+				continue
+			}
 
-            // Deserializar el mensaje JSON a la estructura Paquete
-            var paquete Paquete
-            err := json.Unmarshal(d.Body, &paquete)
-            if err != nil {
-                log.Printf("Error al deserializar el mensaje: %s", err)
-                d.Nack(false, false)
-                continue
-            }
+			// Procesar el paquete
+			procesarPaquete(paquete)
 
-            // Procesar el paquete
-            procesarPaquete(paquete)
+			// Confirmar manualmente que el mensaje fue procesado correctamente
+			d.Ack(false)
+		}
 
-            // Confirmar manualmente que el mensaje fue procesado correctamente
-            d.Ack(false)
-        }
+		// Cerrar el canal y la conexión a RabbitMQ
+		ch.Close()
+		conn.Close()
 
-        // Imprimir balance final y terminar el programa
-        imprimirBalanceFinal()
-        imprimirIntentos()
+		// Cerrar el programa
+		close(forever)
+	}()
 
-        // Cerrar el canal y la conexión a RabbitMQ
-        ch.Close()
-        conn.Close()
-
-        // Cerrar el programa
-        close(forever)
-    }()
-
-    log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-    <-forever
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
 }
-
 
 // Actualizar los registros en memoria con cada paquete procesado
 func procesarPaquete(paquete Paquete) {

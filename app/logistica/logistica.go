@@ -193,16 +193,16 @@ func (s *logisticsServer) assignPackagesToCaravans() {
 		var packageToAssign *pb.PackageOrder
 
 		// Seleccionar el primer paquete disponible en las colas
-        if len(s.prioritarioQueue) > 0 {
-            packageToAssign = s.prioritarioQueue[0]
-            s.prioritarioQueue = s.prioritarioQueue[1:]
-        } else if len(s.ostronitasQueue) > 0 {
-            packageToAssign = s.ostronitasQueue[0]
-            s.ostronitasQueue = s.ostronitasQueue[1:]
-        } else if len(s.normalQueue) > 0 {
-            packageToAssign = s.normalQueue[0]
-            s.normalQueue = s.normalQueue[1:]
-        }
+		if len(s.prioritarioQueue) > 0 {
+			packageToAssign = s.prioritarioQueue[0]
+			s.prioritarioQueue = s.prioritarioQueue[1:]
+		} else if len(s.ostronitasQueue) > 0 {
+			packageToAssign = s.ostronitasQueue[0]
+			s.ostronitasQueue = s.ostronitasQueue[1:]
+		} else if len(s.normalQueue) > 0 {
+			packageToAssign = s.normalQueue[0]
+			s.normalQueue = s.normalQueue[1:]
+		}
 
 		if packageToAssign != nil {
 			// Crear la instrucción de entrega
@@ -240,103 +240,60 @@ func generateTrackingCode() string {
 	return "T" + time.Now().Format("20060102150405") + string(rand.Intn(1000))
 }
 
-/* func startRabbitMQ() {
-	var conn *amqp.Connection
-	var err error
-	// Intentar conectarse a RabbitMQ con reintentos
-	for i := 0; i < 10; i++ {
-		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
-		if err == nil {
-			log.Printf("Servidor Rabbit MQ conectado exitosamente")
-			break
+/*
+	 func startRabbitMQ() {
+		var conn *amqp.Connection
+		var err error
+		// Intentar conectarse a RabbitMQ con reintentos
+		for i := 0; i < 10; i++ {
+			conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+			if err == nil {
+				log.Printf("Servidor Rabbit MQ conectado exitosamente")
+				break
+			}
+			log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
+			time.Sleep(5 * time.Second)
 		}
-		log.Printf("Failed to connect to RabbitMQ, retrying in 5 seconds... (%d/10)", i+1)
-		time.Sleep(5 * time.Second)
+		failOnError(err, "Failed to connect to RabbitMQ")
+		defer conn.Close()
+		ch, err := conn.Channel()
+		failOnError(err, "Failed to open a channel")
+		defer ch.Close()
+
+		q, err := ch.QueueDeclare(
+			"paquetes_entregados", // name
+			false,                 // durable
+			false,                 // delete when unused
+			false,                 // exclusive
+			false,                 // no-wait
+			nil,                   // arguments
+		)
+		failOnError(err, "Failed to declare a queue")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		paquete := Paquete{
+			ID:       "12345",
+			Valor:    100.50,
+			Intentos: 1,
+			Estado:   "no_entregado",
+			Servicio: "Ostronitas",
+		}
+
+		body, _ := json.Marshal(paquete)
+		err = ch.PublishWithContext(ctx,
+			"",     // exchange
+			q.Name, // routing key
+			false,  // mandatory
+			false,  // immediate
+			amqp.Publishing{
+				ContentType: "text/plain",
+				Body:        []byte(body),
+			})
+		failOnError(err, "Failed to publish a message")
+		log.Printf(" [x] Sent %s\n", body)
 	}
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		"paquetes_entregados", // name
-		false,                 // durable
-		false,                 // delete when unused
-		false,                 // exclusive
-		false,                 // no-wait
-		nil,                   // arguments
-	)
-	failOnError(err, "Failed to declare a queue")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	paquete := Paquete{
-		ID:       "12345",
-		Valor:    100.50,
-		Intentos: 1,
-		Estado:   "no_entregado",
-		Servicio: "Ostronitas",
-	}
-
-	body, _ := json.Marshal(paquete)
-	err = ch.PublishWithContext(ctx,
-		"",     // exchange
-		q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
-		})
-	failOnError(err, "Failed to publish a message")
-	log.Printf(" [x] Sent %s\n", body)
-} */
-
-func sendTerminationMessage() error {
-    conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
-    if err != nil {
-        return fmt.Errorf("error conectando a RabbitMQ: %v", err)
-    }
-    defer conn.Close()
-
-    ch, err := conn.Channel()
-    if err != nil {
-        return fmt.Errorf("error abriendo canal en RabbitMQ: %v", err)
-    }
-    defer ch.Close()
-
-    q, err := ch.QueueDeclare(
-        "paquetes_entregados", 
-        false, 
-        false, 
-        false, 
-        false, 
-        nil,
-    )
-    if err != nil {
-        return fmt.Errorf("error declarando cola: %v", err)
-    }
-
-    // Mensaje especial que indica que se terminó el procesamiento
-    terminationMessage := "END"
-    err = ch.Publish(
-        "",     // exchange
-        q.Name, // routing key
-        false,  // mandatory
-        false,  // immediate
-        amqp.Publishing{
-            ContentType: "text/plain",
-            Body:        []byte(terminationMessage),
-        })
-    if err != nil {
-        return fmt.Errorf("error publicando en RabbitMQ: %v", err)
-    }
-
-    log.Printf("Se envió el mensaje de terminación a RabbitMQ")
-    return nil
-}
-
+*/
 func main() {
 	//----------------------------------------------------Servidor gRPC----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	lis, err := net.Listen("tcp", port)
