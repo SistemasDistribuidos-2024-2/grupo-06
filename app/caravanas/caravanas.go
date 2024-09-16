@@ -52,7 +52,7 @@ func (s *caravanServer) AssignDelivery(ctx context.Context, instruction *pb.Deli
     return &pb.DeliveryStatus{
         IdPaquete: instruction.IdPaquete,
         Estado:    estado,
-        Intentos:  1, // Simulamos que se intentó una vez
+        Intentos:  instruction.Intentos, // Simulamos que se intentó una vez
     }, nil
 }
 
