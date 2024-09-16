@@ -3,10 +3,13 @@ package main
 import (
 	pb "caravanas/proto/grpc/proto"
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
+	"os"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -41,10 +44,15 @@ func (s *caravanServer) AssignDelivery(ctx context.Context, instruction *pb.Deli
         estado = "No Entregado"
     }
 
+    logDeliveryStatus(instruction, estado)
+
+    // Espera para un segundo paquete
+    time.Sleep(5 * time.Second)
+
     return &pb.DeliveryStatus{
         IdPaquete: instruction.IdPaquete,
         Estado:    estado,
-        Intentos:  1, // Simulamos que se intentó una vez
+        Intentos:  instruction.Intentos, // Simulamos que se intentó una vez
     }, nil
 }
 
@@ -56,6 +64,20 @@ func (s *caravanServer) ReportDeliveryStatus(ctx context.Context, status *pb.Del
 
     return &emptypb.Empty{}, nil
 }
+
+func logDeliveryStatus(instruction *pb.DeliveryInstruction, estado string) {
+    file, err := os.OpenFile("registro_entregas.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+        log.Fatalf("Error abriendo el archivo de registro: %v", err)
+    }
+    defer file.Close()
+
+    logEntry := fmt.Sprintf("Paquete: %s, Caravana: %s, Estado: %s\n", instruction.IdPaquete, instruction.TipoCaravana, estado)
+    if _, err := file.WriteString(logEntry); err != nil {
+        log.Fatalf("Error escribiendo en el archivo de registro: %v", err)
+    }
+}
+
 
 func main() {
     lis, err := net.Listen("tcp", port)

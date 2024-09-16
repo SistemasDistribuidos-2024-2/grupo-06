@@ -50,9 +50,8 @@ var finanzas = RegistroFinanzas{
 func main() {
 	var conn *amqp.Connection
 	var err error
-	// Intentar conectarse a RabbitMQ con reintentos
 	for i := 0; i < 10; i++ {
-		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+		conn, err = amqp.Dial("amqp://guest:guest@dist021/")
 		if err == nil {
 			log.Printf("Servidor Rabbit MQ conectado exitosamente")
 			break
@@ -64,30 +63,29 @@ func main() {
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
-	//Declaramos la misma cola que en el productor, se declara ya que se pod´ria ejecutar antes el consumidor que el productor
+
 	q, err := ch.QueueDeclare(
-		"paquetes_entregados", // name
-		false,                 // durable
-		false,                 // delete when unused
-		false,                 // exclusive
-		false,                 // no-wait
-		nil,                   // arguments
+		"paquetes_entregados",
+		false,
+		false,
+		false,
+		false,
+		nil,
 	)
 	failOnError(err, "Failed to declare a queue")
 
 	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
+		q.Name,
+		"",
+		false, // auto-ack manual para controlar el cierre
+		false,
+		false,
+		false,
+		nil,
 	)
 	failOnError(err, "Failed to register a consumer")
 
 	var forever chan struct{}
-
 	go func() {
 		for d := range msgs {
 			// Deserializar el mensaje JSON a la estructura Paquete
@@ -95,18 +93,34 @@ func main() {
 			err := json.Unmarshal(d.Body, &paquete)
 			if err != nil {
 				log.Printf("Error al deserializar el mensaje: %s", err)
+				d.Nack(false, false)
 				continue
 			}
-
-			// Procesar el paquete recibido según la lógica del laboratorio
+			if paquete.ID == "0" {
+				log.Printf("Fin del programa")
+				// Imprimir balance final y terminar el programa
+				log.Printf("BalanceFinal")
+				imprimirBalanceFinal()
+				log.Printf("Imprimir Intentos")
+				imprimirIntentos()
+				break
+			}
+			// Procesar el paquete
 			procesarPaquete(paquete)
+
+			// Confirmar manualmente que el mensaje fue procesado correctamente
+			d.Ack(false)
 		}
+
+		// Cerrar el canal y la conexión a RabbitMQ
+		ch.Close()
+		conn.Close()
+
+		// Cerrar el programa
+		close(forever)
 	}()
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	//Cuando termine su ejecución, imprimir el balance final y los intentos por paquete
-	defer imprimirBalanceFinal()
-	defer imprimirIntentos()
 	<-forever
 }
 
