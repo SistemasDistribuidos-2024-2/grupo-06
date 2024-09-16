@@ -4,6 +4,7 @@
      dist021--->Logistica, dist022--->Caravanas, dist023--->Facciones/clientes, dist024---->Finanzas
 3-Se configuró los puertos pensando en que se deben instalar en las maquinas virtuales distXYZ,por ende si se quiere correr en local, se deben cambiar las direcciones.    
 2-Orden de ejecucion:
+Desde la carpeta grupo-06 escribir en la consola:
     1- make docker-logistica
     2- make docker-caravanas
     3- make docker-clientes

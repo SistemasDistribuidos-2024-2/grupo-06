@@ -12,15 +12,11 @@ services:
     container_name: rabbitmq
     networks:
       - network_tarea
-    
   caravanas:
     build: ./caravanas
     container_name: container_caravanas
     ports:
       - "50052:50052"
-    #depends_on: Caravanas No se incia antes de...logistica
-    depends_on:
-      - logistica
     networks:
       - network_tarea
     #enviorment: Variables de entorno
@@ -31,13 +27,9 @@ services:
     container_name: container_facciones
     networks:
       - network_tarea
-    depends_on:
-      - logistica
   finanzas:
     build: ./finanzas
     container_name: container_finanzas
-    depends_on:
-      - logistica
     networks:
       - network_tarea
 #Red EXTERNA que se crea mediante docker
