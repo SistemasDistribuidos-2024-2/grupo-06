@@ -1,0 +1,4 @@
+1-Se debe crear una red externa con docker llamada network_tarea
+    docker network create network_tarea
+
+2-
