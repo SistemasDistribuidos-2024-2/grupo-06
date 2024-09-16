@@ -1,4 +1,10 @@
 1-Se debe crear una red externa con docker llamada network_tarea
     docker network create network_tarea
-
-2-
+2- Tenemos la siguiente distribucion:
+     dist021--->Logistica, dist022--->Caravanas, dist023--->Facciones/clientes, dist024---->Finanzas
+3-Se configuró los puertos pensando en que se deben instalar en las maquinas virtuales distXYZ,por ende si se quiere correr en local, se deben cambiar las direcciones.    
+2-Orden de ejecucion:
+    1- make docker-logistica
+    2- make docker-caravanas
+    3- make docker-clientes
+    4- make docker-finanzas

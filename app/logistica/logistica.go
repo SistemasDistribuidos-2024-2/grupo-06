@@ -153,17 +153,17 @@ func sendToRabbitMQ(order *pb.PackageOrder) error {
 
 // Función para calcular el número máximo de intentos
 func calcularMaxIntentos(order *pb.PackageOrder) int {
-    if order.Faccion == "Ostronitas" {
-        return 3 // Ostronitas siempre tiene un máximo de 3 intentos
-    } else if order.Faccion == "Grineer" {
-        // Para los Grineer, calculamos el número de intentos en función del valor del suministro
-        intentos := int(order.ValorSuministro) / 100
-        if intentos < 1 {
-            return 1 // Al menos 1 intento si el valor es menor a 100
-        }
-        return intentos
-    }
-    return 3 // Valor predeterminado por seguridad
+	if order.Faccion == "Ostronitas" {
+		return 3 // Ostronitas siempre tiene un máximo de 3 intentos
+	} else if order.Faccion == "Grineer" {
+		// Para los Grineer, calculamos el número de intentos en función del valor del suministro
+		intentos := int(order.ValorSuministro) / 100
+		if intentos < 1 {
+			return 1 // Al menos 1 intento si el valor es menor a 100
+		}
+		return intentos
+	}
+	return 3 // Valor predeterminado por seguridad
 }
 
 // Implementación del método para consultar el estado de los paquetes
@@ -188,7 +188,7 @@ func (s *logisticsServer) CheckOrderStatus(ctx context.Context, req *pb.Tracking
 
 // Función para crear la conexión gRPC con las caravanas
 func connectToCaravans() (pb.CaravanServiceClient, *grpc.ClientConn, error) {
-	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
+	conn, err := grpc.Dial("dist022:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
 	if err != nil {
 		return nil, nil, err
 	}
@@ -198,82 +198,82 @@ func connectToCaravans() (pb.CaravanServiceClient, *grpc.ClientConn, error) {
 
 // Función para asignar paquetes a caravanas
 func (s *logisticsServer) assignPackagesToCaravans() {
-    caravanClient, conn, err := connectToCaravans()
-    if err != nil {
-        log.Fatalf("No se pudo conectar al servicio de caravanas: %v", err)
-    }
-    defer conn.Close()
+	caravanClient, conn, err := connectToCaravans()
+	if err != nil {
+		log.Fatalf("No se pudo conectar al servicio de caravanas: %v", err)
+	}
+	defer conn.Close()
 
-    for {
-        s.mu.Lock()
-        var packageToAssign *pb.PackageOrder
+	for {
+		s.mu.Lock()
+		var packageToAssign *pb.PackageOrder
 
-        // Procesar primero paquetes prioritarios
-        if len(s.prioritarioQueue) > 0 {
-            packageToAssign = s.prioritarioQueue[0]
-            s.prioritarioQueue = s.prioritarioQueue[1:]
-        } else if len(s.ostronitasQueue) > 0 {
-            packageToAssign = s.ostronitasQueue[0]
-            s.ostronitasQueue = s.ostronitasQueue[1:]
-        } else if len(s.normalQueue) > 0 {
-            packageToAssign = s.normalQueue[0]
-            s.normalQueue = s.normalQueue[1:]
-        }
+		// Procesar primero paquetes prioritarios
+		if len(s.prioritarioQueue) > 0 {
+			packageToAssign = s.prioritarioQueue[0]
+			s.prioritarioQueue = s.prioritarioQueue[1:]
+		} else if len(s.ostronitasQueue) > 0 {
+			packageToAssign = s.ostronitasQueue[0]
+			s.ostronitasQueue = s.ostronitasQueue[1:]
+		} else if len(s.normalQueue) > 0 {
+			packageToAssign = s.normalQueue[0]
+			s.normalQueue = s.normalQueue[1:]
+		}
 
-        if packageToAssign != nil {
-            seguimiento := seguimientoPaquetes[packageToAssign.IdPaquete]
-            intentos := seguimiento.Intentos
+		if packageToAssign != nil {
+			seguimiento := seguimientoPaquetes[packageToAssign.IdPaquete]
+			intentos := seguimiento.Intentos
 
-            // Calculamos el número máximo de intentos según la facción y el valor
-            maxIntentos := calcularMaxIntentos(packageToAssign)
+			// Calculamos el número máximo de intentos según la facción y el valor
+			maxIntentos := calcularMaxIntentos(packageToAssign)
 
-            for intentos < maxIntentos {
-                instruction := &pb.DeliveryInstruction{
-                    IdPaquete:       packageToAssign.IdPaquete,
-                    TipoCaravana:    packageToAssign.TipoPaquete,
-                    WarframeEscolta: "Excalibur",
-                    Destino:         packageToAssign.Destino,
-                    TipoPaquete:     packageToAssign.TipoPaquete,
-                    Seguimiento:     seguimiento.CodigoSeguimiento,
-                    Valor:           packageToAssign.ValorSuministro,
+			for intentos < maxIntentos {
+				instruction := &pb.DeliveryInstruction{
+					IdPaquete:       packageToAssign.IdPaquete,
+					TipoCaravana:    packageToAssign.TipoPaquete,
+					WarframeEscolta: "Excalibur",
+					Destino:         packageToAssign.Destino,
+					TipoPaquete:     packageToAssign.TipoPaquete,
+					Seguimiento:     seguimiento.CodigoSeguimiento,
+					Valor:           packageToAssign.ValorSuministro,
 					Intentos:        int32(intentos + 1),
-                }
+				}
 
-                log.Printf("Intentando entrega del paquete %s, intento %d de %d\n", packageToAssign.IdPaquete, intentos+1, maxIntentos)
-                response, err := caravanClient.AssignDelivery(context.Background(), instruction)
-                if err != nil {
-                    log.Printf("Error asignando el paquete a la caravana: %v", err)
-                    break
-                }
+				log.Printf("Intentando entrega del paquete %s, intento %d de %d\n", packageToAssign.IdPaquete, intentos+1, maxIntentos)
+				response, err := caravanClient.AssignDelivery(context.Background(), instruction)
+				if err != nil {
+					log.Printf("Error asignando el paquete a la caravana: %v", err)
+					break
+				}
 
-                intentos++
-                seguimiento.Intentos = intentos
-                seguimientoPaquetes[packageToAssign.IdPaquete] = seguimiento
+				intentos++
+				seguimiento.Intentos = intentos
+				seguimientoPaquetes[packageToAssign.IdPaquete] = seguimiento
 
-                // Si se entregó correctamente, actualizamos el estado
-                if response.Estado == "Entregado" {
-                    log.Printf("Paquete %s entregado exitosamente\n", packageToAssign.IdPaquete)
-                    seguimiento.Estado = "Entregado"
-                    seguimientoPaquetes[packageToAssign.IdPaquete] = seguimiento
-                    break
-                } else {
-                    log.Printf("Paquete %s no entregado, intento %d\n", packageToAssign.IdPaquete, intentos)
-                }
+				// Si se entregó correctamente, actualizamos el estado
+				if response.Estado == "Entregado" {
+					log.Printf("Paquete %s entregado exitosamente\n", packageToAssign.IdPaquete)
+					seguimiento.Estado = "Entregado"
+					seguimientoPaquetes[packageToAssign.IdPaquete] = seguimiento
+					break
+				} else {
+					log.Printf("Paquete %s no entregado, intento %d\n", packageToAssign.IdPaquete, intentos)
+				}
 
-                // Esperamos antes del siguiente intento
-                time.Sleep(2 * time.Second)
-            }
+				// Esperamos antes del siguiente intento
+				time.Sleep(2 * time.Second)
+			}
 
-            if seguimiento.Intentos == maxIntentos && seguimiento.Estado != "Entregado" {
-                log.Printf("Paquete %s no se pudo entregar después de %d intentos\n", packageToAssign.IdPaquete, maxIntentos)
-                seguimiento.Estado = "No Entregado"
-                seguimientoPaquetes[packageToAssign.IdPaquete] = seguimiento
-            }
-        }
+			if seguimiento.Intentos == maxIntentos && seguimiento.Estado != "Entregado" {
+				log.Printf("Paquete %s no se pudo entregar después de %d intentos\n", packageToAssign.IdPaquete, maxIntentos)
+				seguimiento.Estado = "No Entregado"
+				seguimientoPaquetes[packageToAssign.IdPaquete] = seguimiento
+			}
+		}
 
-        s.mu.Unlock()
-        time.Sleep(2 * time.Second) // Simulación de tiempo entre asignaciones
-    }
+		s.mu.Unlock()
+		time.Sleep(2 * time.Second) // Simulación de tiempo entre asignaciones
+	}
 }
 
 func generateTrackingCode() string {

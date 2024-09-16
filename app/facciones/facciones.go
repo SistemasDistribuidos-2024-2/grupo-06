@@ -13,18 +13,18 @@ import (
 )
 
 const (
-	address = "container_logistica:50051" //Aqui debería ir la dirrecion del contenedor de logistica ejemplo: "dist021:50051"
+	address   = "dist021:50051" //Aqui debería ir la dirrecion de logistica ejemplo: "dist021:50051"
 	inputFile = "input.txt"
 )
 
 // Estructura para contener las órdenes desde el archivo
 type Order struct {
-	IdPaquete        string
-	Faccion          string
-	TipoPaquete      string
-	NombreSuministro string
-	ValorSuministro  int32
-	Destino          string
+	IdPaquete         string
+	Faccion           string
+	TipoPaquete       string
+	NombreSuministro  string
+	ValorSuministro   int32
+	Destino           string
 	CodigoSeguimiento string
 }
 
@@ -48,12 +48,12 @@ func readOrdersFromFile(filePath string) ([]Order, error) {
 		}
 		valorSuministro := parseInt(fields[3])
 		order := Order{
-			IdPaquete:        fields[0],
-			Faccion:          fields[1],
-			TipoPaquete:      fields[2],
-			NombreSuministro: fields[3],
-			ValorSuministro:  valorSuministro,
-			Destino:          fields[5],
+			IdPaquete:         fields[0],
+			Faccion:           fields[1],
+			TipoPaquete:       fields[2],
+			NombreSuministro:  fields[3],
+			ValorSuministro:   valorSuministro,
+			Destino:           fields[5],
 			CodigoSeguimiento: fields[6],
 		}
 		orders = append(orders, order)
@@ -74,7 +74,7 @@ func parseInt(s string) int32 {
 }
 
 func sendOrder(client pb.LogisticsServiceClient, order Order) string {
-	
+
 	// Crear un objeto de orden gRPC
 	grpcOrder := &pb.PackageOrder{
 		IdPaquete:        order.IdPaquete,
