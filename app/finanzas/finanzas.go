@@ -51,7 +51,7 @@ func main() {
 	var conn *amqp.Connection
 	var err error
 	for i := 0; i < 10; i++ {
-		conn, err = amqp.Dial("amqp://guest:guest@dist021/")
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/")
 		if err == nil {
 			log.Printf("Servidor Rabbit MQ conectado exitosamente")
 			break

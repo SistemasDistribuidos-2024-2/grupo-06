@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	address   = "dist021:50051" //Aqui debería ir la dirrecion de logistica ejemplo: "dist021:50051"
+	address   = "container_logistica:50051" //Aqui debería ir la dirrecion de logistica ejemplo: "dist021:50051"
 	inputFile = "input.txt"
 )
 

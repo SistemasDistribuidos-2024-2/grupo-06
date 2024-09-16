@@ -188,7 +188,7 @@ func (s *logisticsServer) CheckOrderStatus(ctx context.Context, req *pb.Tracking
 
 // Función para crear la conexión gRPC con las caravanas
 func connectToCaravans() (pb.CaravanServiceClient, *grpc.ClientConn, error) {
-	conn, err := grpc.Dial("dist022:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
+	conn, err := grpc.Dial("container_caravanas:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
 	if err != nil {
 		return nil, nil, err
 	}
