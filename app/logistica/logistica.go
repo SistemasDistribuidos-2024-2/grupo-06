@@ -94,7 +94,7 @@ func sendToRabbitMQ(order *pb.PackageOrder) error {
 	var err error
 	// Intentar conectarse a RabbitMQ con reintentos
 	for i := 0; i < 10; i++ {
-		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/")
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/") //El servidor RabbitMQ se encuentra en el mismo contenedor que el servidor de logística
 		if err == nil {
 			log.Printf("Servidor Rabbit MQ conectado exitosamente")
 			break
@@ -188,7 +188,7 @@ func (s *logisticsServer) CheckOrderStatus(ctx context.Context, req *pb.Tracking
 
 // Función para crear la conexión gRPC con las caravanas
 func connectToCaravans() (pb.CaravanServiceClient, *grpc.ClientConn, error) {
-	conn, err := grpc.Dial("container_caravanas:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
+	conn, err := grpc.Dial("dist022:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
 	if err != nil {
 		return nil, nil, err
 	}

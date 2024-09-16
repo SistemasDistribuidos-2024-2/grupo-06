@@ -14,6 +14,11 @@
 
 ## Consideraciones
 
+El servidor RabbitMQ se encuentra en el mismo contenedor que el servidor de logística
+
+dist021--->Logistica, dist022--->Caravanas, dist023--->Facciones/clientes, dist024---->Finanzas
+
+
 Consideramos que todos los pedidos se harán desde un archivo "input.txt" como se planteó en el foro del aula.
 Ejemplo de input que consideramos:
 
