@@ -46,6 +46,7 @@ message DeliveryInstruction {
     string tipo_paquete = 5;
     string seguimiento = 6;
     int32 valor = 7;
+    int32 intentos = 8;
 }
 
 // Mensaje de confirmación de la caravana
