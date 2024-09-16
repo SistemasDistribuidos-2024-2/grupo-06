@@ -1,27 +1,15 @@
 # Comando para iniciar el servicio de Logística (Konzu)
 docker-logistica:
-	@docker-compose up logistica
+	@docker-compose -f ./app/docker-compose.yml up logistica
 
 # Comando para iniciar el servicio de Finanzas (Raquis)
 docker-finanzas:
-	@docker-compose up finanzas
+	@docker-compose -f ./app/docker-compose.yml up finanzas
 
 # Comando para iniciar el servicio de Caravanas
 docker-caravanas:
-	@docker-compose up caravanas
+	@docker-compose -f ./app/docker-compose.yml up caravanas
 
 # Comando para iniciar el servicio de Clientes( Clientes  Se usa indistintamente con facciones)
 docker-clientes:
-	@docker-compose up facciones
-
-# Comando para levantar todos los servicios a la vez
-docker-up:
-	@docker-compose up
-
-# Comando para detener todos los servicios
-docker-down:
-	@docker-compose down
-
-# Comando para construir las imágenes Docker
-docker-build:
-	@docker-compose build
+	@docker-compose -f ./app/docker-compose.yml up facciones
