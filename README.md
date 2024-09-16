@@ -14,6 +14,8 @@
 
 ## Consideraciones
 
+3-Se configuró los puertos pensando en que se deben instalar en las maquinas virtuales distXYZ(VER instruccionesdocker.txt)
+
 El servidor RabbitMQ se encuentra en el mismo contenedor que el servidor de logística
 
 dist021--->Logistica, dist022--->Caravanas, dist023--->Facciones/clientes, dist024---->Finanzas
