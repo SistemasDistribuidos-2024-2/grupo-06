@@ -94,7 +94,7 @@ func sendToRabbitMQ(order *pb.PackageOrder) error {
 	var err error
 	// Intentar conectarse a RabbitMQ con reintentos
 	for i := 0; i < 10; i++ {
-		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq/") //El servidor RabbitMQ se encuentra en el mismo contenedor que el servidor de logística
+		conn, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/") //El servidor RabbitMQ se encuentra en el mismo contenedor que el servidor de logística
 		if err == nil {
 			log.Printf("Servidor Rabbit MQ conectado exitosamente")
 			break
