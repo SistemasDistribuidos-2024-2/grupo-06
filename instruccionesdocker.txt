@@ -10,9 +10,16 @@
   *En logistica.go /linea191
     conn, err := grpc.Dial("container_caravanas:50052", grpc.WithInsecure()) // Puerto del servicio de caravanas
 
-2-Orden de ejecucion:
+2-Para crear las imagenes y construir el contenedor:
 Desde la carpeta grupo-06 escribir en la consola:
     1- make docker-logistica
     2- make docker-caravanas
     3- make docker-clientes
     4- make docker-finanzas
+
+
+3-Para iniciar los contenedores
+    1- docker run app_logistica
+    2- docker run app_caravanas
+    3- docker run app_facciones
+    4- docker run app_finanzas

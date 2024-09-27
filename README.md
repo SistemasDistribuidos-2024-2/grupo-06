@@ -6,17 +6,30 @@
 - Felipe Muñoz 201973512-8
 
 ## Instrucciones
+2-Para crear las imagenes y construir el contenedor:
+Desde la carpeta grupo-06 escribir en la consola:
+    1- make docker-logistica
+    2- make docker-caravanas
+    3- make docker-clientes
+    4- make docker-finanzas
 
-– make docker-logistica: Iniciará el código hecho en Docker para el sistema de logı́stica (Konzu).
-– make docker-finanzas: Iniciará el código hecho en Docker para el sistema financiero (Raquis).
-– make docker-caravanas: Iniciará el código hecho en Docker para los camiones.
-– make docker-clientes: Iniciará el código hecho en Docker para los clientes.
+3-Para iniciar los contenedores
+    1- docker run app_logistica
+    2- docker run app_caravanas
+    3- docker run app_facciones
+    4- docker run app_finanzas
 
 ## Consideraciones
 
-3-Se configuró los puertos pensando en que se deben instalar en las maquinas virtuales distXYZ(VER instruccionesdocker.txt)
+1-Se hicieron modifaciones solo a lo que se respecta a el manejor de los puertos:
+    Rabbit-Falto exponer el puerto( y se hizo una modificación con lo que respecta a la conexion del puerto en logistica.go 
+)
+    505001(en la primera entrega falto exponerlo en docker-compose)
 
-El servidor RabbitMQ se encuentra en el mismo contenedor que el servidor de logística
+2-Se cambio el nombre del Makefile MAKEFILE ->makefile
+
+
+3-El servidor RabbitMQ se encuentra en el mismo contenedor que el servidor de logística
 
 dist021--->Logistica, dist022--->Caravanas, dist023--->Facciones/clientes, dist024---->Finanzas
 
