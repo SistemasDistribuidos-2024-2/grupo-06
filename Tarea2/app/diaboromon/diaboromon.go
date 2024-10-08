@@ -21,7 +21,7 @@ func (s *server) Atacar(ctx context.Context, ataque *pb.Ataque) (*pb.Confirmacio
 }
 
 func main() {
-    lis, err := net.Listen("tcp", ":50053")
+    lis, err := net.Listen("tcp", ":50056")
     if err != nil {
         log.Fatalf("Error al iniciar el listener: %v", err)
     }
@@ -29,7 +29,7 @@ func main() {
     grpcServer := grpc.NewServer()
     pb.RegisterDiaboromonServiceServer(grpcServer, &server{})
 
-    log.Println("Diaboromon corriendo en :50053")
+    log.Println("Diaboromon corriendo en :50056")
     if err := grpcServer.Serve(lis); err != nil {
         log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
     }

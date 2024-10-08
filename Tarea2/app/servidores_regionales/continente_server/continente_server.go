@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	pb "servidores_regionales/grpc/proto"
+	pb "continente_server/grpc/proto"
 
 	"google.golang.org/grpc"
 )
@@ -21,7 +21,7 @@ func (s *server) EnviarEstado(ctx context.Context, digimon *pb.EstadoDigimon) (*
 }
 
 func main() {
-    lis, err := net.Listen("tcp", ":50051")
+    lis, err := net.Listen("tcp", ":50053")
     if err != nil {
         log.Fatalf("Error al iniciar el listener: %v", err)
     }
@@ -29,7 +29,7 @@ func main() {
     grpcServer := grpc.NewServer()
     pb.RegisterServidorRegionalServiceServer(grpcServer, &server{})
 
-    log.Println("Servidor Regional corriendo en :50051")
+    log.Println("Continente Server corriendo en :50053")
     if err := grpcServer.Serve(lis); err != nil {
         log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
     }

@@ -27,7 +27,7 @@ func (s *server) SolicitarAtributo(ctx context.Context, solicitud *pb.SolicitudA
 }
 
 func main() {
-    lis, err := net.Listen("tcp", ":50054")
+    lis, err := net.Listen("tcp", ":50057")
     if err != nil {
         log.Fatalf("Error al iniciar el listener: %v", err)
     }
@@ -35,7 +35,7 @@ func main() {
     grpcServer := grpc.NewServer()
     pb.RegisterDataNodeServiceServer(grpcServer, &server{})
 
-    log.Println("Data Node 2 corriendo en :50055")
+    log.Println("Data Node 2 corriendo en :50057")
     if err := grpcServer.Serve(lis); err != nil {
         log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
     }

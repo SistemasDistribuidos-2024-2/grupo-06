@@ -12,7 +12,7 @@ import (
 
 func main() {
     // Conexión con el Primary Node
-    conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure(), grpc.WithBlock())
+    conn, err := grpc.Dial("localhost:50054", grpc.WithInsecure(), grpc.WithBlock())
     if err != nil {
         log.Fatalf("No se pudo conectar al Primary Node: %v", err)
     }
