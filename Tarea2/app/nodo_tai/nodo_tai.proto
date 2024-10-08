@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option go_package = "grpc/proto";
+
+package nodotai;
+
+service NodoTaiService {
+  // RPC para solicitar cantidad de datos al Primary Node
+  rpc SolicitarDatos(Solicitud) returns (Respuesta);
+
+  // RPC para recibir ataques de Diaboromon
+  rpc RecibirAtaque(AtaqueDiaboromon) returns (Respuesta);
+}
+
+// Mensaje de solicitud para pedir datos
+message Solicitud {
+  string mensaje = 1; // Mensaje de solicitud
+}
+
+// Mensaje de respuesta con cantidad de datos acumulados
+message Respuesta {
+  float cantidad_datos = 1; // Cantidad de datos acumulados
+}
+
+// Mensaje de ataque de Diaboromon
+message AtaqueDiaboromon {
+  int32 dano = 1; // Cantidad de daño infligido
+}

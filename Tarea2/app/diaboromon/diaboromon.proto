@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "grpc/proto";
+
+package diaboromon;
+
+service DiaboromonService {
+  // RPC para atacar al Nodo Tai
+  rpc Atacar(Ataque) returns (Confirmacion);
+}
+
+// Mensaje de ataque
+message Ataque {
+  int32 dano = 1; // Cantidad de daño infligido
+}
+
+// Mensaje de confirmación de que el ataque fue recibido
+message Confirmacion {
+  string mensaje = 1; // Mensaje de confirmación
+}

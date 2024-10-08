@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option go_package = "grpc/proto";
+
+package datanode;
+
+service DataNodeService {
+  // RPC para recibir datos de un Digimon
+  rpc AlmacenarDatos(DatosDigimon) returns (Confirmacion);
+
+  // RPC para solicitar atributos de un Digimon
+  rpc SolicitarAtributo(SolicitudAtributo) returns (AtributoDigimon);
+}
+
+// Mensaje de datos del Digimon
+message DatosDigimon {
+  int32 id = 1; // ID único del Digimon
+  string atributo = 2; // Atributo (Data, Vaccine, Virus)
+}
+
+// Mensaje de solicitud de atributo por ID
+message SolicitudAtributo {
+  int32 id = 1; // ID del Digimon
+}
+
+// Mensaje que contiene el atributo de un Digimon
+message AtributoDigimon {
+  string atributo = 1; // Atributo (Data, Vaccine, Virus)
+}
+
+// Mensaje de confirmación para recibir datos
+message Confirmacion {
+  string mensaje = 1; // Mensaje de confirmación
+}
