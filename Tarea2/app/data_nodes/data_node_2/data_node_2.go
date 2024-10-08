@@ -35,7 +35,7 @@ func main() {
     grpcServer := grpc.NewServer()
     pb.RegisterDataNodeServiceServer(grpcServer, &server{})
 
-    log.Println("Data Node 2 corriendo en :50054")
+    log.Println("Data Node 2 corriendo en :50055")
     if err := grpcServer.Serve(lis); err != nil {
         log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
     }
