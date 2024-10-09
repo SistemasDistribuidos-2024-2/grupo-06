@@ -2,35 +2,33 @@ package main
 
 import (
 	"context"
-	"log"
-	"net"
-
 	pb "diaboromon/grpc/proto"
+	"fmt"
+	"log"
 
 	"google.golang.org/grpc"
 )
 
-type server struct {
-    pb.UnimplementedDiaboromonServiceServer
-}
+const (
+    nodoTaiAddress = "localhost:50052" // Nodo Tai address
+)
 
-// Atacar implementa el método RPC para atacar al Nodo Tai
-func (s *server) Atacar(ctx context.Context, ataque *pb.Ataque) (*pb.Confirmacion, error) {
-    log.Printf("Diaboromon ataca: Daño infligido: %d", ataque.Dano)
-    return &pb.Confirmacion{Mensaje: "Ataque ejecutado correctamente"}, nil
+func atacar(client pb.DiaboromonServiceClient) {
+    ataque := &pb.Ataque{Dano: 10}
+    res, err := client.Atacar(context.Background(), ataque)
+    if err != nil {
+        log.Fatalf("Error al atacar Nodo Tai: %v", err)
+    }
+    fmt.Printf("Confirmación de ataque: %s\n", res.Mensaje)
 }
 
 func main() {
-    lis, err := net.Listen("tcp", ":50056")
+    conn, err := grpc.Dial(nodoTaiAddress, grpc.WithInsecure(), grpc.WithBlock())
     if err != nil {
-        log.Fatalf("Error al iniciar el listener: %v", err)
+        log.Fatalf("No se pudo conectar al Nodo Tai: %v", err)
     }
+    defer conn.Close()
 
-    grpcServer := grpc.NewServer()
-    pb.RegisterDiaboromonServiceServer(grpcServer, &server{})
-
-    log.Println("Diaboromon corriendo en :50056")
-    if err := grpcServer.Serve(lis); err != nil {
-        log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
-    }
+    client := pb.NewDiaboromonServiceClient(conn)
+    atacar(client)
 }

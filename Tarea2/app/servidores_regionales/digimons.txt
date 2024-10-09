@@ -1,0 +1,8 @@
+Agumon,Vaccine
+Biyomon,Data
+Gabumon,Vaccine
+Patamon,Virus
+Veemon,Data
+Guilmon,Vaccine
+Gatomon,Vaccine
+Palmon,Virus
