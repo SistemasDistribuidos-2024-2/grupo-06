@@ -1,15 +1,14 @@
-# Comando para iniciar el servicio de Logística (Konzu)
-docker-logistica:
-	@docker-compose -f ./app/docker-compose.yml up logistica
+# Comando para iniciar los servicios de la maquina 1: isla_file y  data_node_1
+docker-MV1:
+	@docker-compose -f ./app/docker-compose.yml up -d image_isla_file
+	@docker-compose -f ./app/docker-compose.yml up -d image_data_node_1
 
-# Comando para iniciar el servicio de Finanzas (Raquis)
-docker-finanzas:
-	@docker-compose -f ./app/docker-compose.yml up finanzas
-
-# Comando para iniciar el servicio de Caravanas
-docker-caravanas:
-	@docker-compose -f ./app/docker-compose.yml up caravanas
-
-# Comando para iniciar el servicio de Clientes( Clientes  Se usa indistintamente con facciones)
-docker-clientes:
-	@docker-compose -f ./app/docker-compose.yml up facciones
+docker-MV2:
+	@docker-compose -f ./app/docker-compose.yml up -d image_continente_folder
+	@docker-compose -f ./app/docker-compose.yml up -d image_diaboromon
+docker-MV3:
+	@docker-compose -f ./app/docker-compose.yml up -d image_continente_server
+	@docker-compose -f ./app/docker-compose.yml up -d image_data_node_2
+docker-MV4:
+	@docker-compose -f ./app/docker-compose.yml up -d image_primary_node
+	@docker-compose -f ./app/docker-compose.yml up -d image_nodo_tai

@@ -1,6 +1,6 @@
 FROM golang:latest
 
-WORKDIR /app
+WORKDIR /app/servidores_regionales
 #Copio todo lo que esta en el directorio actual
 COPY . .
 
@@ -8,9 +8,10 @@ COPY . .
 #Ejecuto el siguiente comando. Nos aseguramos que todas las dependencias esten alineadas
 RUN go mod tidy
 #Construyo el binario
-RUN go build -o primary_node
+RUN go build -o isla_file
 
+#exponer el puerto
 EXPOSE 50051
 
 #Ejecuto el build creado
-CMD ["./primary_node"]
+CMD ["./isla_file"]
