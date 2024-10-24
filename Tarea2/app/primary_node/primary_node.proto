@@ -7,30 +7,26 @@ package primarynode;
 service PrimaryNodeService {
   // RPC para enviar datos al Data Node correspondiente
   rpc TransferirDatos(DatosDigimon) returns (Confirmacion);
-
+  
   // RPC para solicitar cantidad de datos acumulados
   rpc SolicitarDatos(SolicitudTai) returns (RespuestaTai);
 }
 
-// Mensaje que contiene los detalles a transferir a un Data Node
 message DatosDigimon {
-  int32 id = 1; // ID único del Digimon
-  string nombre = 2; // Nombre del Digimon
-  string atributo = 3; // Atributo (Data, Vaccine, Virus)
-  bool sacrificado = 4; // Si fue sacrificado (true/false)
+  int32 id = 1;             
+  string nombre = 2;         
+  string atributo = 3;       
+  bool sacrificado = 4;      
 }
 
-// Mensaje para solicitar datos acumulados (usado por Nodo Tai)
 message SolicitudTai {
-  string mensaje = 1; // Mensaje de solicitud
+  string mensaje = 1; 
 }
 
-// Mensaje de respuesta al Nodo Tai con la cantidad de datos acumulados
 message RespuestaTai {
-  float cantidad_datos = 1; // Cantidad de datos acumulada
+  float cantidad_datos = 1; 
 }
 
-// Mensaje de confirmación de que los datos fueron transferidos
 message Confirmacion {
-  string mensaje = 1; // Mensaje de confirmación
+  string mensaje = 1; 
 }

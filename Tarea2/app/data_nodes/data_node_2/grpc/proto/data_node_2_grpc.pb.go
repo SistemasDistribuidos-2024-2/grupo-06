@@ -19,18 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DataNodeService_AlmacenarDatos_FullMethodName    = "/datanode.DataNodeService/AlmacenarDatos"
-	DataNodeService_SolicitarAtributo_FullMethodName = "/datanode.DataNodeService/SolicitarAtributo"
+	DataNodeService_GuardarDatos_FullMethodName = "/datanode.DataNodeService/GuardarDatos"
 )
 
 // DataNodeServiceClient is the client API for DataNodeService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataNodeServiceClient interface {
-	// RPC para recibir datos de un Digimon
-	AlmacenarDatos(ctx context.Context, in *DatosDigimon, opts ...grpc.CallOption) (*Confirmacion, error)
-	// RPC para solicitar atributos de un Digimon
-	SolicitarAtributo(ctx context.Context, in *SolicitudAtributo, opts ...grpc.CallOption) (*AtributoDigimon, error)
+	// RPC para guardar los datos enviados desde el Primary Node
+	GuardarDatos(ctx context.Context, in *DatosDigimon, opts ...grpc.CallOption) (*Confirmacion, error)
 }
 
 type dataNodeServiceClient struct {
@@ -41,20 +38,10 @@ func NewDataNodeServiceClient(cc grpc.ClientConnInterface) DataNodeServiceClient
 	return &dataNodeServiceClient{cc}
 }
 
-func (c *dataNodeServiceClient) AlmacenarDatos(ctx context.Context, in *DatosDigimon, opts ...grpc.CallOption) (*Confirmacion, error) {
+func (c *dataNodeServiceClient) GuardarDatos(ctx context.Context, in *DatosDigimon, opts ...grpc.CallOption) (*Confirmacion, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Confirmacion)
-	err := c.cc.Invoke(ctx, DataNodeService_AlmacenarDatos_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dataNodeServiceClient) SolicitarAtributo(ctx context.Context, in *SolicitudAtributo, opts ...grpc.CallOption) (*AtributoDigimon, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AtributoDigimon)
-	err := c.cc.Invoke(ctx, DataNodeService_SolicitarAtributo_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, DataNodeService_GuardarDatos_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,10 +52,8 @@ func (c *dataNodeServiceClient) SolicitarAtributo(ctx context.Context, in *Solic
 // All implementations must embed UnimplementedDataNodeServiceServer
 // for forward compatibility.
 type DataNodeServiceServer interface {
-	// RPC para recibir datos de un Digimon
-	AlmacenarDatos(context.Context, *DatosDigimon) (*Confirmacion, error)
-	// RPC para solicitar atributos de un Digimon
-	SolicitarAtributo(context.Context, *SolicitudAtributo) (*AtributoDigimon, error)
+	// RPC para guardar los datos enviados desde el Primary Node
+	GuardarDatos(context.Context, *DatosDigimon) (*Confirmacion, error)
 	mustEmbedUnimplementedDataNodeServiceServer()
 }
 
@@ -79,11 +64,8 @@ type DataNodeServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedDataNodeServiceServer struct{}
 
-func (UnimplementedDataNodeServiceServer) AlmacenarDatos(context.Context, *DatosDigimon) (*Confirmacion, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AlmacenarDatos not implemented")
-}
-func (UnimplementedDataNodeServiceServer) SolicitarAtributo(context.Context, *SolicitudAtributo) (*AtributoDigimon, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SolicitarAtributo not implemented")
+func (UnimplementedDataNodeServiceServer) GuardarDatos(context.Context, *DatosDigimon) (*Confirmacion, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GuardarDatos not implemented")
 }
 func (UnimplementedDataNodeServiceServer) mustEmbedUnimplementedDataNodeServiceServer() {}
 func (UnimplementedDataNodeServiceServer) testEmbeddedByValue()                         {}
@@ -106,38 +88,20 @@ func RegisterDataNodeServiceServer(s grpc.ServiceRegistrar, srv DataNodeServiceS
 	s.RegisterService(&DataNodeService_ServiceDesc, srv)
 }
 
-func _DataNodeService_AlmacenarDatos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DataNodeService_GuardarDatos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DatosDigimon)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DataNodeServiceServer).AlmacenarDatos(ctx, in)
+		return srv.(DataNodeServiceServer).GuardarDatos(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DataNodeService_AlmacenarDatos_FullMethodName,
+		FullMethod: DataNodeService_GuardarDatos_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataNodeServiceServer).AlmacenarDatos(ctx, req.(*DatosDigimon))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DataNodeService_SolicitarAtributo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SolicitudAtributo)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DataNodeServiceServer).SolicitarAtributo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DataNodeService_SolicitarAtributo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataNodeServiceServer).SolicitarAtributo(ctx, req.(*SolicitudAtributo))
+		return srv.(DataNodeServiceServer).GuardarDatos(ctx, req.(*DatosDigimon))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -150,12 +114,8 @@ var DataNodeService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*DataNodeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AlmacenarDatos",
-			Handler:    _DataNodeService_AlmacenarDatos_Handler,
-		},
-		{
-			MethodName: "SolicitarAtributo",
-			Handler:    _DataNodeService_SolicitarAtributo_Handler,
+			MethodName: "GuardarDatos",
+			Handler:    _DataNodeService_GuardarDatos_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
