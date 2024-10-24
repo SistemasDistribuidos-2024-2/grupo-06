@@ -17,6 +17,8 @@ import (
 
 const (
     primaryNodeAddress = "localhost:50051" // Dirección del Primary Node
+    rutaINPUT = "../../INPUT.txt"
+    rutaDIGIMONS = "DIGIMONS.txt"
 )
 
 var PS float32 // Probabilidad de sacrificio
@@ -27,7 +29,7 @@ var VI int     // Vida inicial para Greymon y Garurumon
 
 // Función para leer los valores de INPUT.txt
 func leerInput() {
-    file, err := os.Open("../../INPUT.txt")
+    file, err := os.Open(rutaINPUT)
     if err != nil {
         log.Fatalf("No se pudo abrir el archivo INPUT.txt: %v", err)
     }
@@ -113,7 +115,7 @@ func main() {
     leerInput()
 
     // Leer los datos de digimons desde el archivo DIGIMONS.txt
-    file, err := os.Open("../DIGIMONS.txt")
+    file, err := os.Open(rutaDIGIMONS)
     if err != nil {
         log.Fatalf("No se pudo abrir el archivo DIGIMONS.txt: %v", err)
     }
