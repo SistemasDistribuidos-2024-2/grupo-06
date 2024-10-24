@@ -34,7 +34,7 @@ func enviarDatos(client pb.PrimaryNodeServiceClient, id int32, nombre, atributo 
 
 func main() {
     // Leer los datos de digimons.txt
-    file, err := os.Open("DIGIMONS.txt")
+    file, err := os.Open("../DIGIMONS.txt")
     if err != nil {
         log.Fatalf("No se pudo abrir el archivo DIGIMONS.txt: %v", err)
     }
