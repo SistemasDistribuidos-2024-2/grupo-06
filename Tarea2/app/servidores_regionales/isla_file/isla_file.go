@@ -36,7 +36,7 @@ func main() {
     // Leer los datos de digimons.txt
     file, err := os.Open("DIGIMONS.txt")
     if err != nil {
-        log.Fatalf("No se pudo abrir el archivo DIGIMOS.txt: %v", err)
+        log.Fatalf("No se pudo abrir el archivo DIGIMONS.txt: %v", err)
     }
     defer file.Close()
 
