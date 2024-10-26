@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
-	pb "continente_server/grpc/proto" // Usamos el archivo proto que definimos antes
+	pb "continente_server/grpc/primary-reg" // Usamos el archivo proto que definimos antes
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
@@ -108,20 +108,22 @@ func encryptAES(plaintext string) string {
 }
 
 // Función para enviar los datos de los Digimons al Primary Node
-func enviarDatos(client pb.RegionalServerServiceClient, digimons []Digimon) {
+func enviarDatos(client pb.PrimaryNodeServiceClient, digimons []Digimon) {
     for _, digimon := range digimons {
         // Cifrar la información antes de enviarla
         encryptedNombre := encryptAES(digimon.Nombre)
         encryptedAtributo := encryptAES(digimon.Atributo)
         encryptedEstado := encryptAES(digimon.Sacrificado)
+        log.Printf("nombre encriptado: %s", encryptedNombre)
+        log.Printf("atributo encriptado: %s", encryptedAtributo)
+        log.Printf("estado encriptado: %s", encryptedEstado)
 
-        datos := &pb.DatosDigimon{
-            Nombre:    encryptedNombre,
-            Atributo:  encryptedAtributo,
-            Estado:    encryptedEstado,
+        datos := &pb.DatosCifradosDigimon{
+            NombreCifrado:    encryptedNombre,
+            AtributoCifrado:  encryptedAtributo,
+            EstadoCifrado:    encryptedEstado,
         }
-
-        res, err := client.EnviarEstadoDigimon(context.Background(), datos)
+        res, err := client.RecibirDatosRegional(context.Background(), datos)
         if err != nil {
             log.Printf("Error al enviar datos al Primary Node: %v", err)
             continue
@@ -157,7 +159,7 @@ func main() {
     }
     defer conn.Close()
 
-    client := pb.NewRegionalServerServiceClient(conn)
+    client := pb.NewPrimaryNodeServiceClient(conn)
 
     scanner := bufio.NewScanner(file)
     var digimons []Digimon
@@ -183,7 +185,7 @@ func main() {
     }
 
     // Enviar los datos de los digimons seleccionados en lotes de 6 cada TE segundos
-    ticker := time.NewTicker(time.Duration(TE) * time.Second)
+    ticker := time.NewTicker(time.Duration((TE)) * time.Second)
     defer ticker.Stop()
 
     batchSize := 6
@@ -201,7 +203,6 @@ func main() {
         } else {
             digimons = []Digimon{}
         }
-
         // Enviar el lote al Primary Node
         enviarDatos(client, lote)
     }
