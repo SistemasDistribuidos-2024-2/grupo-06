@@ -1,0 +1,12 @@
+1,1,Dracomon (X Antibody),No-Sacrificado
+2,1,Jazamon,Sacrificado
+3,2,Otamamon (X Antibody),Sacrificado
+4,2,Patamon,Sacrificado
+5,1,Gotsumon (X Antibody),No-Sacrificado
+6,1,Herissmon,No-Sacrificado
+7,1,Impmon (X Antibody),Sacrificado
+8,1,Gumdramon,Sacrificado
+9,2,Shamamon,No-Sacrificado
+10,1,Candlemon,No-Sacrificado
+11,2,Sangomon,Sacrificado
+12,1,ClearAgumon,Sacrificado

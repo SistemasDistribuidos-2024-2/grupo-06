@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"context"
-	pb "continente_folder/grpc/proto"
-	"fmt"
+	pb "continente_folder/grpc/proto" // Usamos el archivo proto que definimos antes
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/hex"
 	"log"
 	"math/rand"
 	"os"
@@ -16,16 +18,25 @@ import (
 )
 
 const (
-    primaryNodeAddress = "localhost:50051" // Dirección del Primary Node
-    rutaINPUT = "../../INPUT.txt"
-    rutaDIGIMONS = "DIGIMONS.txt"
+    primaryNodeAddress = "localhost:50051" // Dirección del Primary Node (cambiar si está en otra máquina)
+    rutaINPUT         = "../../INPUT.txt"
+    rutaDIGIMONS      = "DIGIMONS.txt"
 )
+
+// Struct para almacenar la información de cada Digimon
+type Digimon struct {
+    Nombre     string
+    Atributo   string
+    Sacrificado string
+}
 
 var PS float32 // Probabilidad de sacrificio
 var TE int     // Tiempo de espera para enviar información
 var TD int     // Tiempo de ataque de Diaboromon
 var CD int     // Cantidad de datos necesarios para evolucionar en Omegamon
 var VI int     // Vida inicial para Greymon y Garurumon
+
+var key = []byte("llave-de-grupo-6") // Clave de 32 bytes para AES-256
 
 // Función para leer los valores de INPUT.txt
 func leerInput() {
@@ -78,20 +89,39 @@ func leerInput() {
     }
 }
 
-func enviarDatos(client pb.PrimaryNodeServiceClient, digimons []string) {
+// Función para cifrar los datos usando AES
+func encryptAES(plaintext string) string {
+    block, err := aes.NewCipher(key)
+    if err != nil {
+        log.Fatalf("Error creando el cifrador AES: %v", err)
+    }
+
+    gcm, err := cipher.NewGCM(block)
+    if err != nil {
+        log.Fatalf("Error creando GCM: %v", err)
+    }
+
+    nonce := make([]byte, gcm.NonceSize())
+    ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
+
+    return hex.EncodeToString(ciphertext)
+}
+
+// Función para enviar los datos de los Digimons al Primary Node
+func enviarDatos(client pb.RegionalServerServiceClient, digimons []Digimon) {
     for _, digimon := range digimons {
-        partes := strings.Split(digimon, ",")
-        nombre := partes[0]
-        atributo := partes[1]
-        sacrificado := partes[2] == "Sacrificado"
+        // Cifrar la información antes de enviarla
+        encryptedNombre := encryptAES(digimon.Nombre)
+        encryptedAtributo := encryptAES(digimon.Atributo)
+        encryptedEstado := encryptAES(digimon.Sacrificado)
 
         datos := &pb.DatosDigimon{
-            Nombre:      nombre,
-            Atributo:    atributo,
-            Sacrificado: sacrificado,
+            Nombre:    encryptedNombre,
+            Atributo:  encryptedAtributo,
+            Estado:    encryptedEstado,
         }
 
-        res, err := client.TransferirDatos(context.Background(), datos)
+        res, err := client.EnviarEstadoDigimon(context.Background(), datos)
         if err != nil {
             log.Printf("Error al enviar datos al Primary Node: %v", err)
             continue
@@ -100,12 +130,12 @@ func enviarDatos(client pb.PrimaryNodeServiceClient, digimons []string) {
     }
 }
 
-func seleccionarSacrificio(digimon string) string {
-    sacrificado := "No-Sacrificado"
+// Función que selecciona si un Digimon es sacrificado o no, según la probabilidad PS
+func seleccionarSacrificio() string {
     if rand.Float32() < PS {
-        sacrificado = "Sacrificado"
+        return "Sacrificado"
     }
-    return sacrificado
+    return "No-Sacrificado"
 }
 
 func main() {
@@ -127,10 +157,11 @@ func main() {
     }
     defer conn.Close()
 
-    client := pb.NewPrimaryNodeServiceClient(conn)
+    client := pb.NewRegionalServerServiceClient(conn)
 
     scanner := bufio.NewScanner(file)
-    var digimons []string
+    var digimons []Digimon
+
     for scanner.Scan() {
         linea := scanner.Text()
         partes := strings.Split(linea, ",")
@@ -139,18 +170,39 @@ func main() {
             continue
         }
 
-        nombre := partes[0]
-        atributo := partes[1]
-        estado := seleccionarSacrificio(linea) // Determinar si es sacrificado o no
-
-        digimon := fmt.Sprintf("%s,%s,%s", nombre, atributo, estado)
-        digimons = append(digimons, digimon)
+        // Crear una estructura Digimon y agregarla a la lista
+        digimons = append(digimons, Digimon{
+            Nombre:     partes[0],
+            Atributo:   partes[1],
+            Sacrificado: seleccionarSacrificio(),
+        })
     }
 
     if err := scanner.Err(); err != nil {
         log.Fatalf("Error al leer el archivo: %v", err)
     }
 
-    // Enviar los datos de los digimons seleccionados
-    enviarDatos(client, digimons)
+    // Enviar los datos de los digimons seleccionados en lotes de 6 cada TE segundos
+    ticker := time.NewTicker(time.Duration(TE) * time.Second)
+    defer ticker.Stop()
+
+    batchSize := 6
+    for range ticker.C {
+        if len(digimons) == 0 {
+            log.Println("No quedan más Digimons para procesar.")
+            break
+        }
+
+        // Seleccionar un lote de hasta 6 Digimons
+        lote := digimons
+        if len(digimons) > batchSize {
+            lote = digimons[:batchSize]
+            digimons = digimons[batchSize:]
+        } else {
+            digimons = []Digimon{}
+        }
+
+        // Enviar el lote al Primary Node
+        enviarDatos(client, lote)
+    }
 }
