@@ -1,52 +1,111 @@
 package main
 
 import (
+	"bufio"
 	"context"
-	pb "data_node_1/grpc/proto"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"strconv"
+	"strings"
+	"sync"
+
+	pb "data_node_1/grpc/primary-data" // Reemplaza "path/to" por la ruta correcta
 
 	"google.golang.org/grpc"
 )
 
+const (
+	portDataNode1 = ":50053" // Puerto para el Data Node 1
+	portDataNode2 = ":50054" // Puerto para el Data Node 2
+)
+
+var (
+	mutex sync.Mutex
+)
+
+// server representa el Data Node
 type server struct {
-    pb.UnimplementedDataNodeServiceServer
+	pb.UnimplementedDataNodeServiceServer
+	dataFile string
 }
 
-func (s *server) GuardarDatos(ctx context.Context, in *pb.DatosDigimon) (*pb.Confirmacion, error) {
-    log.Printf("Datos recibidos: ID=%d, Nombre=%s, Atributo=%s, Sacrificado=%v", in.Id, in.Nombre, in.Atributo, in.Sacrificado)
+// GuardarDatos recibe los datos del Primary Node y los almacena en el archivo correspondiente
+func (s *server) GuardarDatos(ctx context.Context, in *pb.DatosParaDataNode) (*pb.Confirmacion, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
 
-    outputFile := fmt.Sprintf("INFO%d.txt", in.Id%2+1)
-    file, err := os.OpenFile(outputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-    if err != nil {
-        log.Fatalf("No se pudo abrir el archivo %s: %v", outputFile, err)
-        return nil, err
-    }
-    defer file.Close()
+	// Abrir o crear el archivo
+	file, err := os.OpenFile(s.dataFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo abrir el archivo %s: %v", s.dataFile, err)
+	}
+	defer file.Close()
 
-    _, err = fmt.Fprintf(file, "ID=%d, Nombre=%s, Atributo=%s, Sacrificado=%v\n", in.Id, in.Nombre, in.Atributo, in.Sacrificado)
-    if err != nil {
-        log.Fatalf("Error al escribir los datos: %v", err)
-        return nil, err
-    }
+	// Escribir la información en el archivo en el formato: ID,Atributo
+	linea := fmt.Sprintf("%d,%s\n", in.Id, in.Atributo)
+	if _, err := file.WriteString(linea); err != nil {
+		return nil, fmt.Errorf("error al escribir en el archivo %s: %v", s.dataFile, err)
+	}
 
-    log.Printf("Datos guardados en %s", outputFile)
-    return &pb.Confirmacion{Mensaje: "Datos guardados exitosamente"}, nil
+	log.Printf("Datos guardados en %s: ID=%d, Atributo=%s", s.dataFile, in.Id, in.Atributo)
+	return &pb.Confirmacion{Mensaje: "Datos guardados correctamente"}, nil
+}
+
+// ObtenerDatos permite responder con el atributo de un Digimon específico
+func (s *server) ObtenerDatos(ctx context.Context, in *pb.SolicitudDatos) (*pb.RespuestaDatos, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	// Abrir el archivo de datos
+	file, err := os.Open(s.dataFile)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo abrir el archivo %s: %v", s.dataFile, err)
+	}
+	defer file.Close()
+
+	// Leer el archivo línea por línea
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		linea := scanner.Text()
+		partes := strings.Split(linea, ",")
+		if len(partes) < 2 {
+			continue
+		}
+
+		// Comparar el ID
+		id, err := strconv.Atoi(partes[0])
+		if err != nil {
+			continue
+		}
+		if int32(id) == in.Id {
+			// Si coincide, devolver el atributo encontrado
+			return &pb.RespuestaDatos{Atributo: partes[1]}, nil
+		}
+	}
+
+	// Si no se encuentra el ID, devolver un error
+	return nil, fmt.Errorf("no se encontró el Digimon con ID %d en %s", in.Id, s.dataFile)
 }
 
 func main() {
-    lis, err := net.Listen("tcp", ":50053")
-    if err != nil {
-        log.Fatalf("Error al escuchar en el puerto: %v", err)
-    }
+	// Determina si este nodo es el Data Node 1 o Data Node 2 y configura el archivo y puerto
+	
+	port := portDataNode1
+	dataFile := "INFO_1.txt"
+	
 
-    grpcServer := grpc.NewServer()
-    pb.RegisterDataNodeServiceServer(grpcServer, &server{})
+	// Crear el servidor gRPC
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("Error al escuchar en el puerto %s: %v", port, err)
+	}
+	s := grpc.NewServer()
+	pb.RegisterDataNodeServiceServer(s, &server{dataFile: dataFile})
 
-    log.Println("Data Node escuchando en el puerto 50053...")
-    if err := grpcServer.Serve(lis); err != nil {
-        log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
-    }
+	log.Printf("Data Node escuchando en el puerto %s y guardando en %s...", port, dataFile)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
+	}
 }

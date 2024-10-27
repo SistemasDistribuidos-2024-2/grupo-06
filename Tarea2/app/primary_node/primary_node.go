@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	pbData "primary_node/grpc/primary-data"
 	pb "primary_node/grpc/primary-reg"
 
 	"google.golang.org/grpc"
@@ -72,10 +73,10 @@ func (s *server) RecibirDatosRegional(ctx context.Context, in *pb.DatosCifradosD
 	if err != nil {
 		return nil, fmt.Errorf("error al desencriptar nombre: %v", err)
 	}
-	/* atributo, err := decryptAES(in.AtributoCifrado)
+	atributo, err := decryptAES(in.AtributoCifrado)
 	if err != nil {
 		return nil, fmt.Errorf("error al desencriptar atributo: %v", err)
-	} */
+	}
 	estado, err := decryptAES(in.EstadoCifrado)
 	if err != nil {
 		return nil, fmt.Errorf("error al desencriptar estado: %v", err)
@@ -105,10 +106,10 @@ func (s *server) RecibirDatosRegional(ctx context.Context, in *pb.DatosCifradosD
 	}
 
 	// Enviar la información al Data Node
-	/* err = enviarADataNode(dataNodeAddress, id, atributo)
+	err = enviarADataNode(dataNodeAddress, id, atributo)
 	if err != nil {
 		return nil, err
-	} */
+	}
 
 	return &pb.Confirmacion{Mensaje: "Datos recibidos y procesados exitosamente"}, nil
 }
@@ -148,74 +149,24 @@ func almacenarEnInfoTxt(id int32, dataNodeAddress, nombre, estado string) error 
 }
 
 // Función para enviar datos al Data Node
-/* func enviarADataNode(dataNodeAddress string, id int32, atributo string) error {
+func enviarADataNode(dataNodeAddress string, id int32, atributo string) error {
 	conn, err := grpc.Dial(dataNodeAddress, grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("no se pudo conectar al Data Node: %v", err)
 	}
 	defer conn.Close()
 
-	client := pb.NewPrimaryNodeServiceClient(conn)
-	datos := &pb.DatosParaDataNode{
+	client := pbData.NewDataNodeServiceClient(conn)
+	datos := &pbData.DatosParaDataNode{
 		Id:       id,
 		Atributo: atributo,
 	}
-	_, err = client.EnviarDatosDataNode(context.Background(), datos)
+	_, err = client.GuardarDatos(context.Background(), datos)
 	if err != nil {
 		return fmt.Errorf("error al enviar datos al Data Node: %v", err)
 	}
 	return nil
-} */
-
-// Función para responder al Nodo Tai
-/* func (s *server) ResponderNodoTai(ctx context.Context, in *pb.SolicitudTai) (*pb.RespuestaTai, error) {
-	// Leer el archivo INFO.txt para calcular los datos acumulados
-	cantidadDatos, err := calcularDatosAcumulados()
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.RespuestaTai{CantidadDatos: cantidadDatos}, nil
-} */
-
-// Función para calcular los datos acumulados desde INFO.txt
-/* func calcularDatosAcumulados() (float32, error) {
-	file, err := os.Open(infoFile)
-	if err != nil {
-		return 0, fmt.Errorf("no se pudo abrir INFO.txt: %v", err)
-	}
-	defer file.Close()
-
-	var cantidadDatos float32
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		linea := scanner.Text()
-		partes := strings.Split(linea, ",")
-		if len(partes) != 4 {
-			continue
-		}
-
-		atributo := partes[2]
-		estado := partes[3]
-
-		// Solo considerar los Digimons sacrificados
-		if estado == "Sacrificado" {
-			switch atributo {
-			case "Vaccine":
-				cantidadDatos += 3
-			case "Data":
-				cantidadDatos += 1.5
-			case "Virus":
-				cantidadDatos += 0.8
-			}
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return 0, fmt.Errorf("error al leer INFO.txt: %v", err)
-	}
-	return cantidadDatos, nil
-} */
+}
 
 // Función para mostrar el porcentaje de Digimons sacrificados al final del programa
 func mostrarPorcentajeSacrificados() {

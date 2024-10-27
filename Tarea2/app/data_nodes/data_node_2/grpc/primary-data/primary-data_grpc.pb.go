@@ -22,16 +22,19 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	DataNodeService_GuardarDatos_FullMethodName = "/datanode.DataNodeService/GuardarDatos"
+	DataNodeService_ObtenerDatos_FullMethodName = "/datanode.DataNodeService/ObtenerDatos"
 )
 
 // DataNodeServiceClient is the client API for DataNodeService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Servicio para los Data Nodes que reciben datos del Primary Node
+// Servicio para los Data Nodes que reciben datos del Primary Node y responden a solicitudes de datos
 type DataNodeServiceClient interface {
 	// RPC para recibir datos procesados del Primary Node
 	GuardarDatos(ctx context.Context, in *DatosParaDataNode, opts ...grpc.CallOption) (*Confirmacion, error)
+	// RPC para devolver los atributos de un Digimon identificado por su ID
+	ObtenerDatos(ctx context.Context, in *SolicitudDatos, opts ...grpc.CallOption) (*RespuestaDatos, error)
 }
 
 type dataNodeServiceClient struct {
@@ -52,14 +55,26 @@ func (c *dataNodeServiceClient) GuardarDatos(ctx context.Context, in *DatosParaD
 	return out, nil
 }
 
+func (c *dataNodeServiceClient) ObtenerDatos(ctx context.Context, in *SolicitudDatos, opts ...grpc.CallOption) (*RespuestaDatos, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RespuestaDatos)
+	err := c.cc.Invoke(ctx, DataNodeService_ObtenerDatos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataNodeServiceServer is the server API for DataNodeService service.
 // All implementations must embed UnimplementedDataNodeServiceServer
 // for forward compatibility.
 //
-// Servicio para los Data Nodes que reciben datos del Primary Node
+// Servicio para los Data Nodes que reciben datos del Primary Node y responden a solicitudes de datos
 type DataNodeServiceServer interface {
 	// RPC para recibir datos procesados del Primary Node
 	GuardarDatos(context.Context, *DatosParaDataNode) (*Confirmacion, error)
+	// RPC para devolver los atributos de un Digimon identificado por su ID
+	ObtenerDatos(context.Context, *SolicitudDatos) (*RespuestaDatos, error)
 	mustEmbedUnimplementedDataNodeServiceServer()
 }
 
@@ -72,6 +87,9 @@ type UnimplementedDataNodeServiceServer struct{}
 
 func (UnimplementedDataNodeServiceServer) GuardarDatos(context.Context, *DatosParaDataNode) (*Confirmacion, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GuardarDatos not implemented")
+}
+func (UnimplementedDataNodeServiceServer) ObtenerDatos(context.Context, *SolicitudDatos) (*RespuestaDatos, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ObtenerDatos not implemented")
 }
 func (UnimplementedDataNodeServiceServer) mustEmbedUnimplementedDataNodeServiceServer() {}
 func (UnimplementedDataNodeServiceServer) testEmbeddedByValue()                         {}
@@ -112,6 +130,24 @@ func _DataNodeService_GuardarDatos_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DataNodeService_ObtenerDatos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SolicitudDatos)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataNodeServiceServer).ObtenerDatos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataNodeService_ObtenerDatos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataNodeServiceServer).ObtenerDatos(ctx, req.(*SolicitudDatos))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DataNodeService_ServiceDesc is the grpc.ServiceDesc for DataNodeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -122,6 +158,10 @@ var DataNodeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GuardarDatos",
 			Handler:    _DataNodeService_GuardarDatos_Handler,
+		},
+		{
+			MethodName: "ObtenerDatos",
+			Handler:    _DataNodeService_ObtenerDatos_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

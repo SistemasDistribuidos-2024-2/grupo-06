@@ -5,10 +5,13 @@ option go_package = "grpc/primary-data";
 
 package datanode;
 
-// Servicio para los Data Nodes que reciben datos del Primary Node
+// Servicio para los Data Nodes que reciben datos del Primary Node y responden a solicitudes de datos
 service DataNodeService {
   // RPC para recibir datos procesados del Primary Node
   rpc GuardarDatos(DatosParaDataNode) returns (Confirmacion);
+
+  // RPC para devolver los atributos de un Digimon identificado por su ID
+  rpc ObtenerDatos(SolicitudDatos) returns (RespuestaDatos);
 }
 
 // Mensaje para enviar datos procesados a los Data Nodes
@@ -20,4 +23,14 @@ message DatosParaDataNode {
 // Mensaje de confirmación de recepción para el Primary Node
 message Confirmacion {
   string mensaje = 1; // Mensaje de confirmación del Data Node
+}
+
+// Mensaje para la solicitud de datos del Primary Node
+message SolicitudDatos {
+  int32 id = 1; // ID del Digimon solicitado
+}
+
+// Mensaje de respuesta con el atributo del Digimon solicitado
+message RespuestaDatos {
+  string atributo = 1; // Atributo del Digimon (Data, Vaccine, Virus)
 }
