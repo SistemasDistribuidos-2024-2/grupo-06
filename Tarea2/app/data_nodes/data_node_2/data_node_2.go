@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	portDataNode1 = ":50053" // Puerto para el Data Node 1
-	portDataNode2 = ":50054" // Puerto para el Data Node 2
+	portDataNode1 = "dist021:50052" // Puerto para el Data Node 1
+	portDataNode2 = "dist023:50052" // Puerto para el Data Node 2
 )
 
 var (
@@ -91,10 +91,9 @@ func (s *server) ObtenerDatos(ctx context.Context, in *pb.SolicitudDatos) (*pb.R
 
 func main() {
 	// Determina si este nodo es el Data Node 1 o Data Node 2 y configura el archivo y puerto
-	
+
 	port := portDataNode2
 	dataFile := "INFO_2.txt"
-	
 
 	// Crear el servidor gRPC
 	lis, err := net.Listen("tcp", port)

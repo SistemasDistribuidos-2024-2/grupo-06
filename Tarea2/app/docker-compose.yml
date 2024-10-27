@@ -13,14 +13,14 @@ services:
     build: ./data_nodes/data_node_1
     container_name: container_data_node_1
     ports:
-      - "50056:50056"
+      - "50052:50052"
     networks:
       - network_tarea
   image_continente_folder:
     build: ./servidores_regionales/continente_folder
     container_name: container_continente_folder
     ports:
-      - "50057:50057"
+      - "50051:50051"
     volumes:
       - ./input.txt:/app/input.txt
     networks:
@@ -31,14 +31,14 @@ services:
     networks:
       - network_tarea
     ports:
-      - "50058:50058"
+      - "50052:50052"
     volumes:
       - ./input.txt:/app/input.txt
   image_continente_server:
     build: ./servidores_regionales/continente_server
     container_name: container_continente_server
     ports:
-      - "50055:50055"
+      - "50051:50051"
     volumes:
       - ./input.txt:/app/input.txt
     networks:
@@ -47,14 +47,14 @@ services:
     build: ./data_nodes/data_node_2
     container_name: container_data_node_2
     ports:
-      - "50053:50053"
+      - "50052:50052"
     networks:
       - network_tarea
   image_primary_node:
     build: ./primary_node
     container_name: container_primary_node
     ports:
-      - "50052:50052"    
+      - "50051:50051"    
     networks:
       - network_tarea
   image_nodo_tai:

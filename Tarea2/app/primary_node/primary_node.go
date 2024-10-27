@@ -23,9 +23,9 @@ import (
 )
 
 const (
-	dataNode1Address = "localhost:50053" // Dirección del Data Node 1
-	dataNode2Address = "localhost:50054" // Dirección del Data Node 2
-	infoFile         = "INFO.txt"        // Archivo de INFO.txt
+	dataNode1Address = "dist021:50052" // Dirección del Data Node 1
+	dataNode2Address = "dist023:50052" // Dirección del Data Node 2
+	infoFile         = "INFO.txt"      // Archivo de INFO.txt
 )
 
 var key = []byte("llave-de-grupo-6") // Clave de 32 bytes para AES-256 (misma clave que en los servidores regionales)
@@ -312,16 +312,16 @@ func mostrarPorcentajeSacrificados() {
 
 // Iniciar el servidor Primary Node
 func main() {
-	lis, err := net.Listen("tcp", ":50052")
+	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatalf("Error al escuchar en el puerto 50052: %v", err)
+		log.Fatalf("Error al escuchar en el puerto 50051: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
 	pbReg.RegisterPrimaryNodeServiceServer(grpcServer, &server{})
 	pbTai.RegisterTaiNodeServiceServer(grpcServer, &server{})
 
-	log.Println("Primary Node escuchando en el puerto 50052...")
+	log.Println("Primary Node escuchando en el puerto 50051...")
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
