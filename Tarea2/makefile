@@ -12,3 +12,7 @@ docker-MV3:
 docker-MV4:
 	@docker-compose -f ./app/docker-compose.yml up -d image_primary_node
 	@docker-compose -f ./app/docker-compose.yml up -d image_nodo_tai
+docker-PR:
+	@docker-compose -f ./app/docker-compose.yml up -d image_primary_node
+	@docker-compose -f ./app/docker-compose.yml up -d image_isla_file
+

@@ -5,6 +5,8 @@ services:
     container_name: container_isla_file
     ports:
       - "50051:50051"
+    volumes:
+      - ./input.txt:/app/input.txt
     networks:
       - network_tarea
   image_data_node_1:
@@ -44,7 +46,7 @@ services:
     build: ./primary_node
     container_name: container_primary_node
     ports:
-      - "50051:50051"    
+      - "50052:50052"    
     networks:
       - network_tarea
   image_nodo_tai:
