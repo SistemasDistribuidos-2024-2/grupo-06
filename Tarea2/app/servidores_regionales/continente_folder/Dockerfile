@@ -10,7 +10,7 @@ RUN go mod tidy
 #Construyo el binario
 RUN go build -o continente_folder
 
-EXPOSE 50052
+EXPOSE 50057
 
 #Ejecuto el build creado
 CMD ["./continente_folder"]

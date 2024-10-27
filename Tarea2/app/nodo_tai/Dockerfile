@@ -10,7 +10,7 @@ RUN go mod tidy
 #Construyo el binario
 RUN go build -o nodo_tai
 
-
+EXPOSE 50059
 
 #Ejecuto el build creado
 CMD ["./nodo_tai"]
