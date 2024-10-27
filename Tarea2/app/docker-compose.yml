@@ -11,7 +11,7 @@ services:
     build: ./data_nodes/data_node_1
     container_name: container_data_node_1
     ports:
-      - "50053:50053"
+      - "50052:50052"
     networks:
       - network_tarea
   image_continente_folder:
