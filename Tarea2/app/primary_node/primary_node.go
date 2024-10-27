@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -9,11 +10,14 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	pbData "primary_node/grpc/primary-data"
-	pb "primary_node/grpc/primary-reg"
+	pbReg "primary_node/grpc/primary-reg"
+	pbTai "primary_node/grpc/tai-primary" // Importa el proto para Tai-Primary
 
 	"google.golang.org/grpc"
 )
@@ -32,7 +36,8 @@ var sacrificados int32 = 0            // Total de Digimons sacrificados
 
 // Server estructura que implementa los servicios del Primary Node
 type server struct {
-	pb.UnimplementedPrimaryNodeServiceServer
+	pbReg.UnimplementedPrimaryNodeServiceServer
+	pbTai.UnimplementedTaiNodeServiceServer
 }
 
 // Función para desencriptar usando AES-GCM
@@ -67,7 +72,7 @@ func decryptAES(encryptedHex string) (string, error) {
 }
 
 // Función para procesar la solicitud de los servidores regionales
-func (s *server) RecibirDatosRegional(ctx context.Context, in *pb.DatosCifradosDigimon) (*pb.Confirmacion, error) {
+func (s *server) RecibirDatosRegional(ctx context.Context, in *pbReg.DatosCifradosDigimon) (*pbReg.Confirmacion, error) {
 	// Desencriptar los datos recibidos
 	nombre, err := decryptAES(in.NombreCifrado)
 	if err != nil {
@@ -111,7 +116,7 @@ func (s *server) RecibirDatosRegional(ctx context.Context, in *pb.DatosCifradosD
 		return nil, err
 	}
 
-	return &pb.Confirmacion{Mensaje: "Datos recibidos y procesados exitosamente"}, nil
+	return &pbReg.Confirmacion{Mensaje: "Datos recibidos y procesados exitosamente"}, nil
 }
 
 // Generar un ID único para el Digimon (incremental)
@@ -168,6 +173,92 @@ func enviarADataNode(dataNodeAddress string, id int32, atributo string) error {
 	return nil
 }
 
+// Función para solicitar atributos de Digimons sacrificados a los Data Nodes y calcular datos acumulados
+func (s *server) SolicitarCantidadDatos(ctx context.Context, in *pbTai.SolicitudTai) (*pbTai.RespuestaTai, error) {
+	idsSacrificados, err := obtenerIDsSacrificados()
+	if err != nil {
+		return nil, err
+	}
+
+	// Solicitar atributos a los Data Nodes y calcular la cantidad de datos acumulados
+	cantidadDatos, err := calcularDatosDesdeDataNodes(idsSacrificados)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbTai.RespuestaTai{CantidadDatos: cantidadDatos}, nil
+}
+
+// Obtener los IDs de los Digimons sacrificados desde INFO.txt
+func obtenerIDsSacrificados() ([]int32, error) {
+	file, err := os.Open(infoFile)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo abrir INFO.txt: %v", err)
+	}
+	defer file.Close()
+
+	var ids []int32
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		linea := scanner.Text()
+		partes := strings.Split(linea, ",")
+		if len(partes) != 4 {
+			continue
+		}
+
+		id := partes[0]
+		estado := partes[3]
+
+		// Agregar solo los IDs de los Digimons sacrificados
+		if estado == "Sacrificado" {
+			idInt, _ := strconv.Atoi(id)
+			ids = append(ids, int32(idInt))
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error al leer INFO.txt: %v", err)
+	}
+	return ids, nil
+}
+
+// Solicita a ambos Data Nodes los atributos de los IDs sacrificados y calcula la cantidad de datos
+func calcularDatosDesdeDataNodes(ids []int32) (float32, error) {
+	var cantidadDatos float32
+
+	for _, dataNodeAddress := range []string{dataNode1Address, dataNode2Address} {
+		conn, err := grpc.Dial(dataNodeAddress, grpc.WithInsecure())
+		if err != nil {
+			return 0, fmt.Errorf("no se pudo conectar al Data Node: %v", err)
+		}
+		defer conn.Close()
+
+		client := pbData.NewDataNodeServiceClient(conn)
+
+		for _, id := range ids {
+			// Solicitar el atributo al Data Node
+			req := &pbData.SolicitudDatos{Id: id}
+			res, err := client.ObtenerDatos(context.Background(), req)
+			if err != nil {
+				log.Printf("Error al obtener atributo del Data Node: %v", err)
+				continue
+			}
+
+			// Calcular la cantidad de datos acumulados en base al atributo
+			switch res.Atributo {
+			case "Vaccine":
+				cantidadDatos += 3
+			case "Data":
+				cantidadDatos += 1.5
+			case "Virus":
+				cantidadDatos += 0.8
+			}
+		}
+	}
+
+	return cantidadDatos, nil
+}
+
 // Función para mostrar el porcentaje de Digimons sacrificados al final del programa
 func mostrarPorcentajeSacrificados() {
 	if totalDigimons == 0 {
@@ -190,7 +281,8 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterPrimaryNodeServiceServer(grpcServer, &server{})
+	pbReg.RegisterPrimaryNodeServiceServer(grpcServer, &server{})
+	pbTai.RegisterTaiNodeServiceServer(grpcServer, &server{})
 
 	log.Println("Primary Node escuchando en el puerto 50051...")
 	go func() {
@@ -200,6 +292,6 @@ func main() {
 	}()
 
 	// Simulación del fin del programa (puedes modificarlo según el contexto)
-	time.Sleep(1000 * time.Second) // Espera a que terminen las operaciones (simulación)
+	time.Sleep(300 * time.Second) // Espera a que terminen las operaciones (simulación)
 	mostrarPorcentajeSacrificados()
 }

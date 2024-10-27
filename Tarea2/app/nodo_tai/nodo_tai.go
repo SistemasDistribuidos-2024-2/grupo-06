@@ -2,82 +2,45 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net"
-	pb "nodo_tai/grpc/proto"
-	"os"
+	"time"
+
+	pb "nodo_tai/grpc/tai-primary" // Asegúrate de que el paquete esté bien referenciado después de compilar el .proto
 
 	"google.golang.org/grpc"
 )
 
 const (
-    primaryNodeAddress = "localhost:50051"
+	primaryNodeAddress = "localhost:50051" // Dirección del Primary Node
 )
 
-type server struct {
-    pb.UnimplementedNodoTaiServiceServer
-    vida int32
-}
+// SolicitarDatos solicita la cantidad de datos acumulados al Primary Node
+func SolicitarDatos(client pb.TaiNodeServiceClient) {
+	// Crear el mensaje de solicitud
+	solicitud := &pb.SolicitudTai{Mensaje: "Solicito cantidad de datos acumulados"}
 
-func (s *server) SolicitarDatos(ctx context.Context, in *pb.Solicitud) (*pb.Respuesta, error) {
-    log.Printf("Solicitud de datos enviada al Primary Node: %s", in.Mensaje)
+	// Hacer la solicitud al Primary Node
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-    conn, err := grpc.Dial(primaryNodeAddress, grpc.WithInsecure())
-    if err != nil {
-        log.Fatalf("No se pudo conectar al Primary Node: %v", err)
-        return nil, err
-    }
-    defer conn.Close()
+	respuesta, err := client.SolicitarCantidadDatos(ctx, solicitud)
+	if err != nil {
+		log.Fatalf("Error al solicitar datos al Primary Node: %v", err)
+	}
 
-    client := pb.NewNodoTaiServiceClient(conn)
-    res, err := client.SolicitarDatos(context.Background(), &pb.Solicitud{Mensaje: "Solicito cantidad de datos"})
-    if err != nil {
-        log.Fatalf("Error al solicitar datos al Primary Node: %v", err)
-        return nil, err
-    }
-
-    log.Printf("Datos recibidos: %f", res.CantidadDatos)
-    return &pb.Respuesta{CantidadDatos: res.CantidadDatos}, nil
-}
-
-func (s *server) RecibirAtaque(ctx context.Context, in *pb.AtaqueDiaboromon) (*pb.Respuesta, error) {
-    log.Printf("Ataque recibido de Diaboromon, daño: %d", in.Dano)
-    s.vida -= in.Dano
-    log.Printf("Vida restante: %d", s.vida)
-
-    if s.vida <= 0 {
-        log.Println("Greymon y Garurumon han sido derrotados...")
-        os.Exit(0)
-    }
-
-    return &pb.Respuesta{CantidadDatos: 0}, nil
+	log.Printf("Cantidad de datos acumulados de los Digimons sacrificados: %.2f", respuesta.CantidadDatos)
 }
 
 func main() {
-    inputFile := "input.txt"
-    file, err := os.Open(inputFile)
-    if err != nil {
-        log.Fatalf("No se pudo abrir el archivo input.txt: %v", err)
-    }
-    defer file.Close()
+	// Conectar al Primary Node
+	conn, err := grpc.Dial(primaryNodeAddress, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("No se pudo conectar al Primary Node: %v", err)
+	}
+	defer conn.Close()
 
-    var vidaInicial int32
-    _, err = fmt.Fscanf(file, "%d", &vidaInicial)
-    if err != nil {
-        log.Fatalf("Error al leer la vida inicial: %v", err)
-    }
+	client := pb.NewTaiNodeServiceClient(conn)
 
-    lis, err := net.Listen("tcp", ":50052")
-    if err != nil {
-        log.Fatalf("Error al escuchar en el puerto 50052: %v", err)
-    }
-
-    grpcServer := grpc.NewServer()
-    pb.RegisterNodoTaiServiceServer(grpcServer, &server{vida: vidaInicial})
-
-    log.Println("Nodo Tai escuchando en el puerto 50052...")
-    if err := grpcServer.Serve(lis); err != nil {
-        log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
-    }
+	// Solicitar datos al Primary Node
+	SolicitarDatos(client)
 }

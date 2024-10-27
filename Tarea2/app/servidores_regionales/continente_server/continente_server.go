@@ -114,9 +114,6 @@ func enviarDatos(client pb.PrimaryNodeServiceClient, digimons []Digimon) {
         encryptedNombre := encryptAES(digimon.Nombre)
         encryptedAtributo := encryptAES(digimon.Atributo)
         encryptedEstado := encryptAES(digimon.Sacrificado)
-        log.Printf("nombre encriptado: %s", encryptedNombre)
-        log.Printf("atributo encriptado: %s", encryptedAtributo)
-        log.Printf("estado encriptado: %s", encryptedEstado)
 
         datos := &pb.DatosCifradosDigimon{
             NombreCifrado:    encryptedNombre,
