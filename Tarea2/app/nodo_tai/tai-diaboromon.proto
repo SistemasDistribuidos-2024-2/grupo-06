@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option go_package = "grpc/tai-diaboromon";
+
+package taidiaboromon;
+
+// Servicio para la comunicación entre Nodo Tai y Diaboromon
+service TaiDiaboromonService {
+  // RPC para enviar ataque desde Diaboromon a Nodo Tai
+  rpc AtaqueDiaboromon (SolicitudAtaque) returns (ConfirmacionAtaque);
+
+  // RPC para que Nodo Tai envíe el resultado de la vida restante
+  rpc EstadoVida (SolicitudEstado) returns (RespuestaEstado);
+}
+
+// Mensaje de solicitud de ataque de Diaboromon hacia Nodo Tai
+message SolicitudAtaque {
+  string mensaje = 1; // Mensaje para indicar ataque ("Diaboromon ataca")
+}
+
+// Mensaje de confirmación del ataque recibido por Nodo Tai
+message ConfirmacionAtaque {
+  string mensaje = 1; // Confirmación de recepción del ataque
+}
+
+// Mensaje de solicitud del Nodo Tai sobre el estado de la vida restante
+message SolicitudEstado {
+  string mensaje = 1; // Mensaje solicitando el estado ("Solicitar estado de vida")
+}
+
+// Mensaje de respuesta con la vida actual del Nodo Tai
+message RespuestaEstado {
+  int32 vida_restante = 1; // Vida restante de Greymon/Garurumon
+}
