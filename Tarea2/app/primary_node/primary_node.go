@@ -180,13 +180,87 @@ func (s *server) SolicitarCantidadDatos(ctx context.Context, in *pbTai.Solicitud
 		return nil, err
 	}
 
-	// Solicitar atributos a los Data Nodes y calcular la cantidad de datos acumulados
-	cantidadDatos, err := calcularDatosDesdeDataNodes(idsSacrificados)
+	// Dividir los IDs de los Digimons sacrificados en base a su asignación de Data Node
+	dataNode1IDs, dataNode2IDs := dividirIDsPorDataNode(idsSacrificados)
+
+	// Calcular la cantidad de datos acumulados desde ambos Data Nodes
+	cantidadDatos1, err := calcularDatosDesdeDataNode(dataNode1Address, dataNode1IDs)
+	if err != nil {
+		return nil, err
+	}
+	cantidadDatos2, err := calcularDatosDesdeDataNode(dataNode2Address, dataNode2IDs)
 	if err != nil {
 		return nil, err
 	}
 
+	cantidadDatos := cantidadDatos1 + cantidadDatos2
+
 	return &pbTai.RespuestaTai{CantidadDatos: cantidadDatos}, nil
+}
+
+// Dividir los IDs de los Digimons sacrificados según el Data Node al que pertenecen
+func dividirIDsPorDataNode(ids []int32) (dataNode1IDs, dataNode2IDs []int32) {
+
+	idsMap := make(map[int32]bool)
+	for _, id := range ids {
+		idsMap[id] = true
+	}
+
+	file, err := os.Open(infoFile)
+	if err != nil {
+		log.Fatalf("No se pudo abrir el archivo %s: %v", infoFile, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		linea := scanner.Text()
+		partes := strings.Split(linea, ",")
+		id, _ := strconv.Atoi(partes[0])
+		dataNode := partes[1]
+
+		if idsMap[int32(id)] {
+			if dataNode == "1" {
+				dataNode1IDs = append(dataNode1IDs, int32(id))
+			} else if dataNode == "2" {
+				dataNode2IDs = append(dataNode2IDs, int32(id))
+			}
+		}
+	}
+	return
+}
+
+// Solicita a un Data Node los atributos de los IDs especificados y calcula la cantidad de datos
+func calcularDatosDesdeDataNode(dataNodeAddress string, ids []int32) (float32, error) {
+	var cantidadDatos float32
+
+	conn, err := grpc.Dial(dataNodeAddress, grpc.WithInsecure())
+	if err != nil {
+		return 0, fmt.Errorf("no se pudo conectar al Data Node: %v", err)
+	}
+	defer conn.Close()
+
+	client := pbData.NewDataNodeServiceClient(conn)
+
+	for _, id := range ids {
+		req := &pbData.SolicitudDatos{Id: id}
+		res, err := client.ObtenerDatos(context.Background(), req)
+		if err != nil {
+			log.Printf("Error al obtener atributo del Data Node: %v", err)
+			continue
+		}
+
+		switch res.Atributo {
+		case "Vaccine":
+			cantidadDatos += 3
+		case "Data":
+			cantidadDatos += 1.5
+		case "Virus":
+			cantidadDatos += 0.8
+		}
+	}
+
+	return cantidadDatos, nil
 }
 
 // Obtener los IDs de los Digimons sacrificados desde INFO.txt
@@ -222,43 +296,6 @@ func obtenerIDsSacrificados() ([]int32, error) {
 	return ids, nil
 }
 
-// Solicita a ambos Data Nodes los atributos de los IDs sacrificados y calcula la cantidad de datos
-func calcularDatosDesdeDataNodes(ids []int32) (float32, error) {
-	var cantidadDatos float32
-
-	for _, dataNodeAddress := range []string{dataNode1Address, dataNode2Address} {
-		conn, err := grpc.Dial(dataNodeAddress, grpc.WithInsecure())
-		if err != nil {
-			return 0, fmt.Errorf("no se pudo conectar al Data Node: %v", err)
-		}
-		defer conn.Close()
-
-		client := pbData.NewDataNodeServiceClient(conn)
-
-		for _, id := range ids {
-			// Solicitar el atributo al Data Node
-			req := &pbData.SolicitudDatos{Id: id}
-			res, err := client.ObtenerDatos(context.Background(), req)
-			if err != nil {
-				log.Printf("Error al obtener atributo del Data Node: %v", err)
-				continue
-			}
-
-			// Calcular la cantidad de datos acumulados en base al atributo
-			switch res.Atributo {
-			case "Vaccine":
-				cantidadDatos += 3
-			case "Data":
-				cantidadDatos += 1.5
-			case "Virus":
-				cantidadDatos += 0.8
-			}
-		}
-	}
-
-	return cantidadDatos, nil
-}
-
 // Función para mostrar el porcentaje de Digimons sacrificados al final del programa
 func mostrarPorcentajeSacrificados() {
 	if totalDigimons == 0 {
@@ -292,6 +329,6 @@ func main() {
 	}()
 
 	// Simulación del fin del programa (puedes modificarlo según el contexto)
-	time.Sleep(300 * time.Second) // Espera a que terminen las operaciones (simulación)
+	time.Sleep(200 * time.Second) // Espera a que terminen las operaciones (simulación)
 	mostrarPorcentajeSacrificados()
 }
