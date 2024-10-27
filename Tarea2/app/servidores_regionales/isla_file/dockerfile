@@ -10,8 +10,5 @@ RUN go mod tidy
 #Construyo el binario
 RUN go build -o isla_file
 
-#exponer el puerto
-EXPOSE 50051
-
 #Ejecuto el build creado
 CMD ["./isla_file"]

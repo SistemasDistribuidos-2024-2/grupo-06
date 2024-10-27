@@ -3,8 +3,8 @@ services:
   image_isla_file:
     build: ./servidores_regionales/isla_file
     container_name: container_isla_file
-    ports:
-      - "50051:50051"
+    volumes:
+      - ./input.txt:/app/input.txt
     networks:
       - network_tarea
   image_data_node_1:
@@ -17,8 +17,8 @@ services:
   image_continente_folder:
     build: ./servidores_regionales/continente_folder
     container_name: container_continente_folder
-    ports:
-      - "50052:50052"
+    volumes:
+      - ./input.txt:/app/input.txt
     networks:
       - network_tarea
   image_diaboromon:
@@ -29,8 +29,8 @@ services:
   image_continente_server:
     build: ./servidores_regionales/continente_server
     container_name: container_continente_server
-    ports:
-      - "50053:50052"
+    volumes:
+      - ./input.txt:/app/input.txt
     networks:
       - network_tarea
   image_data_node_2:
