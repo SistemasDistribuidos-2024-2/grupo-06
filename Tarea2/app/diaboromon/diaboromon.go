@@ -89,6 +89,8 @@ func main() {
     ticker := time.NewTicker(time.Duration(TD) * time.Second)
     defer ticker.Stop()
 
+    time.Sleep(10 * time.Second)
+
     for range ticker.C {
         // Enviar ataque a Nodo Tai
         req := &pb.SolicitudAtaque{Mensaje: "Diaboromon ataca"}

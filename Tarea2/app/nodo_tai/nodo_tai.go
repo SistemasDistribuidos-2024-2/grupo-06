@@ -78,7 +78,6 @@ func SolicitarDatos(client pbPrimary.TaiNodeServiceClient) {
 // Implementación del servidor para recibir ataques de Diaboromon
 type server struct {
 	pbDiaboromon.UnimplementedTaiDiaboromonServiceServer
-	diaboromonClient pbDiaboromon.TaiDiaboromonServiceClient
 }
 
 // Procesar el ataque de Diaboromon y responder con el estado de vida
@@ -88,27 +87,16 @@ func (s *server) AtaqueDiaboromon(ctx context.Context, req *pbDiaboromon.Solicit
 
 	if vida <= 0 {
 		log.Println("Diaboromon ha vencido. Fin de la ejecución.")
-		os.Exit(0)
-	} else {
-		// Enviar estado de vida de vuelta a Diaboromon
-		s.enviarEstadoVida()
-	}
+		return &pbDiaboromon.ConfirmacionAtaque{Mensaje: "Ataque recibido por Nodo Tai"}, nil
+	} 
 
 	return &pbDiaboromon.ConfirmacionAtaque{Mensaje: "Ataque recibido por Nodo Tai"}, nil
 }
 
-// Enviar estado de vida actual a Diaboromon
-func (s *server) enviarEstadoVida() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	estado := &pbDiaboromon.SolicitudEstado{Mensaje: "Solicitar estado de vida"}
-	respuesta, err := s.diaboromonClient.EstadoVida(ctx, estado)
-	if err != nil {
-		log.Printf("Error al enviar estado de vida a Diaboromon: %v", err)
-		return
-	}
-	log.Printf("Estado de vida enviado a Diaboromon: Vida restante %d", respuesta.VidaRestante)
+// Implementación del método EstadoVida para que Diaboromon pueda solicitar el estado de vida
+func (s *server) EstadoVida(ctx context.Context, req *pbDiaboromon.SolicitudEstado) (*pbDiaboromon.RespuestaEstado, error) {
+	log.Printf("Diaboromon solicitó el estado de vida. Vida restante: %d", vida)
+	return &pbDiaboromon.RespuestaEstado{VidaRestante: int32(vida)}, nil
 }
 
 // Atacar a Diaboromon
@@ -135,6 +123,9 @@ func cicloPrincipal(primaryClient pbPrimary.TaiNodeServiceClient) {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		if vida <= 0 {
+			os.Exit(0)
+		}
 		// Verificar si Greymon/Garurumon tienen datos suficientes para atacar
 		SolicitarDatos(primaryClient)
 		if datosAcumulados >= float32(CD) {
@@ -155,14 +146,6 @@ func main() {
 	defer primaryConn.Close()
 	primaryClient := pbPrimary.NewTaiNodeServiceClient(primaryConn)
 
-	// Conectar a Diaboromon como cliente
-	diaboromonConn, err := grpc.Dial(diaboromonAddress, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("No se pudo conectar a Diaboromon: %v", err)
-	}
-	defer diaboromonConn.Close()
-	diaboromonClient := pbDiaboromon.NewTaiDiaboromonServiceClient(diaboromonConn)
-
 	// Iniciar el servidor gRPC para recibir ataques de Diaboromon
 	go func() {
 		lis, err := net.Listen("tcp", nodoTaiPort)
@@ -171,7 +154,7 @@ func main() {
 		}
 
 		grpcServer := grpc.NewServer()
-		pbDiaboromon.RegisterTaiDiaboromonServiceServer(grpcServer, &server{diaboromonClient: diaboromonClient})
+		pbDiaboromon.RegisterTaiDiaboromonServiceServer(grpcServer, &server{})
 
 		log.Printf("Nodo Tai escuchando en el puerto %s para recibir ataques de Diaboromon", nodoTaiPort)
 		if err := grpcServer.Serve(lis); err != nil {
