@@ -1,0 +1,24 @@
+// primary_node.proto
+syntax = "proto3";
+
+option go_package = "grpc/primary-reg";
+
+package primarynode;
+
+// Servicio para el Primary Node que recibe datos de los servidores regionales
+service PrimaryNodeService {
+  // RPC para recibir la información cifrada de los servidores regionales
+  rpc RecibirDatosRegional(DatosCifradosDigimon) returns (Confirmacion);
+}
+
+// Mensaje para enviar datos cifrados de los Digimons desde los servidores regionales
+message DatosCifradosDigimon {
+  string nombre_cifrado = 1;   // Nombre cifrado del Digimon
+  string atributo_cifrado = 2; // Atributo cifrado del Digimon (Data, Vaccine, Virus)
+  string estado_cifrado = 3;   // Estado cifrado (Sacrificado o No-Sacrificado)
+}
+
+// Mensaje de confirmación de recepción para los servidores regionales
+message Confirmacion {
+  string mensaje = 1; // Mensaje de confirmación del Primary Node
+}

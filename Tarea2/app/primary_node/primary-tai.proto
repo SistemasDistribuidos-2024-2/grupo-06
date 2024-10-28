@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "grpc/tai-primary";
+
+package tainode;
+
+// Servicio para que el Nodo Tai solicite datos al Primary Node
+service TaiNodeService {
+  // RPC para solicitar la cantidad de datos acumulados de los Digimons sacrificados
+  rpc SolicitarCantidadDatos(SolicitudTai) returns (RespuestaTai);
+}
+
+// Mensaje para la solicitud del Nodo Tai
+message SolicitudTai {
+  string mensaje = 1; // Mensaje de solicitud
+}
+
+// Mensaje de respuesta con la cantidad de datos acumulados
+message RespuestaTai {
+  float cantidad_datos = 1; // Cantidad de datos calculados
+}
