@@ -329,6 +329,6 @@ func main() {
 	}()
 
 	// Simulación del fin del programa (puedes modificarlo según el contexto)
-	time.Sleep(200 * time.Second) // Espera a que terminen las operaciones (simulación)
+	time.Sleep(300 * time.Second) // Espera a que terminen las operaciones (simulación)
 	mostrarPorcentajeSacrificados()
 }

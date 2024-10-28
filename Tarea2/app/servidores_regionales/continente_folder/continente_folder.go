@@ -180,6 +180,7 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error al leer el archivo: %v", err)
 	}
+	time.Sleep(60 * time.Second)
 
 	// Enviar los datos de los digimons seleccionados en lotes de 6 cada TE segundos
 	ticker := time.NewTicker(time.Duration((TE)) * time.Second)
