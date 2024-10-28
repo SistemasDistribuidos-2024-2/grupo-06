@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	taiAddress = ":50051" // Dirección del Nodo Tai
-	port       = ":50052" // Puerto en el que escucha Diaboromon
+	taiAddress = "dist024:50051" // Dirección del Nodo Tai
+	port       = ":50052"        // Puerto en el que escucha Diaboromon
 	inputFile  = "/app/input.txt"
 )
 
