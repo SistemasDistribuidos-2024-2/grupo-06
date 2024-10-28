@@ -1,8 +1,17 @@
 version: '3'
 services:
+  image_primary_node:
+    build: ./primary_node
+    container_name: container_primary_node
+    ports:
+      - "50051:50051"
+    networks:
+      - network_tarea
   image_isla_file:
     build: ./servidores_regionales/isla_file
     container_name: container_isla_file
+    depends_on:
+      - image_primary_node
     volumes:
       - ./input.txt:/app/input.txt
     networks:
@@ -11,7 +20,7 @@ services:
     build: ./data_nodes/data_node_1
     container_name: container_data_node_1
     ports:
-      - "50052:50052"
+      - "50051:50051"
     networks:
       - network_tarea
   image_continente_folder:
@@ -26,6 +35,10 @@ services:
     container_name: container_diaboromon
     networks:
       - network_tarea
+    ports:
+      - "50052:50052"
+    volumes:
+      - ./input.txt:/app/input.txt
   image_continente_server:
     build: ./servidores_regionales/continente_server
     container_name: container_continente_server
@@ -37,14 +50,7 @@ services:
     build: ./data_nodes/data_node_2
     container_name: container_data_node_2
     ports:
-      - "50053:50053"
-    networks:
-      - network_tarea
-  image_primary_node:
-    build: ./primary_node
-    container_name: container_primary_node
-    ports:
-      - "50051:50051"    
+      - "50052:50052"
     networks:
       - network_tarea
   image_nodo_tai:
@@ -52,6 +58,10 @@ services:
     container_name: container_nodo_tai
     networks:
       - network_tarea
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./input.txt:/app/input.txt
 #Red EXTERNA que se crea mediante docker
 networks:
   network_tarea:

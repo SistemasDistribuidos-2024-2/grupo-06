@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	primaryNodeAddress = "localhost:50051" // Dirección del Primary Node (cambiar si está en otra máquina)
+	primaryNodeAddress = "dist022:50051" // Dirección del Primary Node (cambiar si está en otra máquina)
 	rutaINPUT          = "/app/input.txt"
 	rutaDIGIMONS       = "DIGIMONS.txt"
 )
@@ -180,6 +180,7 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error al leer el archivo: %v", err)
 	}
+	time.Sleep(60 * time.Second)
 
 	// Enviar los datos de los digimons seleccionados en lotes de 6 cada TE segundos
 	ticker := time.NewTicker(time.Duration((TE)) * time.Second)
