@@ -8,17 +8,17 @@
 ## Instrucciones
 
 2-Para crear las imagenes y construir el contenedor:
-Desde la carpeta grupo-06 escribir en la consola:
-1- make docker-logistica
-2- make docker-caravanas
-3- make docker-clientes
-4- make docker-finanzas
+Desde la carpeta grupo-06 escribir en la consola en el siguiente orden:
+1- make docker-MV1
+2- make docker-MV4
+3- make docker-MV2
+4- make docker-MV3
 
-3-Para iniciar los contenedores
-1- docker run app_logistica
-2- docker run app_caravanas
-3- docker run app_facciones
-4- docker run app_finanzas
+3-Como ya los contenedores e imagenes están creados, se recomienda ejecutar los siguientes comando en el siguiente orden:
+1-(En dist021): "docker restart container_data_node_1 && docker restart container_diaboromon"
+1-(En dist024): "docker restart container_nodo_tai && docker restart container_data_node_2"
+1-(En dist022): "docker restart container_primary_node && docker restart container_isla_file"
+1-(En dist023): "docker restart container_continente_folder && docker restart container_continente_server"
 
 ## Consideraciones
 
