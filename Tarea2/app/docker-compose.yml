@@ -11,7 +11,7 @@ services:
     build: ./servidores_regionales/isla_file
     container_name: container_isla_file
     depends_on:
-      - container_primary_node
+      - image_primary_node
     volumes:
       - ./input.txt:/app/input.txt
     networks:
