@@ -10,7 +10,7 @@ RUN go mod tidy
 #Construyo el binario
 RUN go build -o data_node_1
 
-EXPOSE 50052
+EXPOSE 50051
 
 #Ejecuto el build creado
 CMD ["./data_node_1"]

@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	primaryNodeAddress = "dist024:50051" // Dirección del Primary Node
-	nodoTaiPort        = ":50052"        // Puerto del Nodo Tai para actuar como servidor
-	diaboromonAddress  = "dist022:50052" // Dirección de Diaboromon
+	primaryNodeAddress = "dist022:50051" // Dirección del Primary Node
+	nodoTaiPort        = ":50051"        // Puerto del Nodo Tai para actuar como servidor
+	diaboromonAddress  = ":50052"        // Dirección de Diaboromon
 	inputFile          = "/app/input.txt"
 )
 
@@ -88,7 +88,7 @@ func (s *server) AtaqueDiaboromon(ctx context.Context, req *pbDiaboromon.Solicit
 	if vida <= 0 {
 		log.Println("Diaboromon ha vencido. Fin de la ejecución.")
 		return &pbDiaboromon.ConfirmacionAtaque{Mensaje: "Ataque recibido por Nodo Tai"}, nil
-	} 
+	}
 
 	return &pbDiaboromon.ConfirmacionAtaque{Mensaje: "Ataque recibido por Nodo Tai"}, nil
 }

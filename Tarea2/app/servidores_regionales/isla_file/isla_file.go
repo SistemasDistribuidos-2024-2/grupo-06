@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	primaryNodeAddress = "dist024:50051" // Dirección del Primary Node (cambiar si está en otra máquina)
+	primaryNodeAddress = ":50051" // Dirección del Primary Node (cambiar si está en otra máquina)
 	rutaINPUT          = "/app/input.txt"
 	rutaDIGIMONS       = "DIGIMONS.txt"
 )

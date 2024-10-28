@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	taiAddress = "dist024:50052" // Dirección del Nodo Tai
-	port       = ":50052"        // Puerto en el que escucha Diaboromon
+	taiAddress = ":50051" // Dirección del Nodo Tai
+	port       = ":50052" // Puerto en el que escucha Diaboromon
 	inputFile  = "/app/input.txt"
 )
 
@@ -89,16 +89,16 @@ func main() {
 	ticker := time.NewTicker(time.Duration(TD) * time.Second)
 	defer ticker.Stop()
 
-    time.Sleep(10 * time.Second)
+	time.Sleep(10 * time.Second)
 
-    for range ticker.C {
-        // Enviar ataque a Nodo Tai
-        req := &pb.SolicitudAtaque{Mensaje: "Diaboromon ataca"}
-        _, err := client.AtaqueDiaboromon(context.Background(), req)
-        if err != nil {
-            log.Printf("Error al enviar ataque a Nodo Tai: %v", err)
-            continue
-        }
+	for range ticker.C {
+		// Enviar ataque a Nodo Tai
+		req := &pb.SolicitudAtaque{Mensaje: "Diaboromon ataca"}
+		_, err := client.AtaqueDiaboromon(context.Background(), req)
+		if err != nil {
+			log.Printf("Error al enviar ataque a Nodo Tai: %v", err)
+			continue
+		}
 
 		// Solicitar estado de vida restante a Nodo Tai
 		estadoReq := &pb.SolicitudEstado{Mensaje: "Solicitar estado de vida"}

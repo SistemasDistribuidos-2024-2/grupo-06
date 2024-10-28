@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	dataNode1Address = "dist021:50052" // Dirección del Data Node 1
-	dataNode2Address = "dist023:50052" // Dirección del Data Node 2
+	dataNode1Address = "dist021:50051" // Dirección del Data Node 1
+	dataNode2Address = "dist021:50052" // Dirección del Data Node 2
 	infoFile         = "INFO.txt"      // Archivo de INFO.txt
 )
 
