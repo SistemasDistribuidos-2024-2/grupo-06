@@ -18,7 +18,7 @@ import (
 
 const (
 	portDataNode1 = "dist021:50052" // Puerto para el Data Node 1
-	portDataNode2 = "dist023:50052" // Puerto para el Data Node 2
+	portDataNode2 = ":50052"        // Puerto para el Data Node 2
 )
 
 var (
