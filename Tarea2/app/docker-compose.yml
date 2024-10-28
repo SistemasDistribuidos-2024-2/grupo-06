@@ -26,8 +26,6 @@ services:
   image_continente_folder:
     build: ./servidores_regionales/continente_folder
     container_name: container_continente_folder
-    ports:
-      - "50051:50051"
     volumes:
       - ./input.txt:/app/input.txt
     networks:
@@ -44,8 +42,6 @@ services:
   image_continente_server:
     build: ./servidores_regionales/continente_server
     container_name: container_continente_server
-    ports:
-      - "50051:50051"
     volumes:
       - ./input.txt:/app/input.txt
     networks:
