@@ -19,7 +19,7 @@ import (
 const (
 	primaryNodeAddress = "dist022:50051" // Dirección del Primary Node
 	nodoTaiPort        = ":50051"        // Puerto del Nodo Tai para actuar como servidor
-	diaboromonAddress  = ":50052"        // Dirección de Diaboromon
+	diaboromonAddress  = "dist021:50052" // Dirección de Diaboromon
 	inputFile          = "/app/input.txt"
 )
 

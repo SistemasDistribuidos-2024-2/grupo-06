@@ -1,7 +1,7 @@
 # Comando para iniciar los servicios de la maquina 1: isla_file y data_node_1
 docker-MV1:
     	
-	@docker-compose -f ./app/docker-compose.yml up image_data_node_1 image_data_node_2
+	@docker-compose -f ./app/docker-compose.yml up image_data_node_1 image_diaboromon
 
 docker-MV2:
     
@@ -13,4 +13,4 @@ docker-MV3:
 
 docker-MV4:
     
-	@docker-compose -f ./app/docker-compose.yml up image_nodo_tai image_diaboromon
+	@docker-compose -f ./app/docker-compose.yml up image_nodo_tai image_data_node_2
