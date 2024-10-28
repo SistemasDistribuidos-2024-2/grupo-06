@@ -23,16 +23,16 @@ import (
 )
 
 const (
-	dataNode1Address = "localhost:50053" // Dirección del Data Node 1
-	dataNode2Address = "localhost:50054" // Dirección del Data Node 2
-	infoFile         = "INFO.txt"        // Archivo de INFO.txt
+	dataNode1Address = "dist021:50052" // Dirección del Data Node 1
+	dataNode2Address = "dist023:50052" // Dirección del Data Node 2
+	infoFile         = "INFO.txt"      // Archivo de INFO.txt
 )
 
 var key = []byte("llave-de-grupo-6") // Clave de 32 bytes para AES-256 (misma clave que en los servidores regionales)
-var mutex sync.Mutex                  // Mutex para sincronización del archivo INFO.txt
-var digimonID int32 = 0               // Contador para los ID de los Digimons
-var totalDigimons int32 = 0           // Total de Digimons recibidos
-var sacrificados int32 = 0            // Total de Digimons sacrificados
+var mutex sync.Mutex                 // Mutex para sincronización del archivo INFO.txt
+var digimonID int32 = 0              // Contador para los ID de los Digimons
+var totalDigimons int32 = 0          // Total de Digimons recibidos
+var sacrificados int32 = 0           // Total de Digimons sacrificados
 
 // Server estructura que implementa los servicios del Primary Node
 type server struct {

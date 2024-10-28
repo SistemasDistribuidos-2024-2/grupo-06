@@ -17,19 +17,19 @@ import (
 )
 
 const (
-	primaryNodeAddress   = "localhost:50051" // Dirección del Primary Node
-	nodoTaiPort          = ":50055"          // Puerto del Nodo Tai para actuar como servidor
-	diaboromonAddress    = "localhost:50052" // Dirección de Diaboromon
-	inputFile            = "../INPUT.txt"
+	primaryNodeAddress = "dist024:50051" // Dirección del Primary Node
+	nodoTaiPort        = ":50052"        // Puerto del Nodo Tai para actuar como servidor
+	diaboromonAddress  = "dist022:50052" // Dirección de Diaboromon
+	inputFile          = "/app/input.txt"
 )
 
 var (
-	PS             float64 // Probabilidad de sacrificio
-	TE             int     // Tiempo de espera para enviar información
-	TD             int     // Tiempo de ataque de Diaboromon
-	CD             int     // Cantidad de datos necesarios para evolucionar
-	VI             int     // Vida inicial para Greymon y Garurumon
-	vida           int     // Vida restante
+	PS              float64 // Probabilidad de sacrificio
+	TE              int     // Tiempo de espera para enviar información
+	TD              int     // Tiempo de ataque de Diaboromon
+	CD              int     // Cantidad de datos necesarios para evolucionar
+	VI              int     // Vida inicial para Greymon y Garurumon
+	vida            int     // Vida restante
 	datosAcumulados float32 // Cantidad de datos acumulados
 )
 
