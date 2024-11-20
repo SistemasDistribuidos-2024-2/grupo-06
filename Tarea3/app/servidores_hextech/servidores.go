@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,17 +40,66 @@ func NuevoServidorHextech(id int) *HextechServer {
     }
 }
 
+// Maneja la escritura en un archivo de región
+func escribirArchivo(region string, productos map[string]int32) {
+	fileName := fmt.Sprintf("%s.txt", region)
+	file, err := os.Create(fileName)
+	if err != nil {
+		log.Fatalf("Error al crear archivo %s: %v", fileName, err)
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+	for producto, cantidad := range productos {
+		linea := fmt.Sprintf("%s %s %d\n", region, producto, cantidad)
+		writer.WriteString(linea)
+	}
+	writer.Flush()
+}
+
+func leerArchivo(region string) map[string]int32 {
+	fileName := fmt.Sprintf("%s.txt", region)
+	productos := make(map[string]int32)
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return productos // Archivo no existe aún, devolvemos un mapa vacío
+		}
+		log.Fatalf("Error al leer archivo %s: %v", fileName, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		linea := scanner.Text()
+		partes := strings.Split(linea, " ")
+		if len(partes) != 3 {
+			continue
+		}
+		producto := partes[1]
+		cantidad, err := strconv.Atoi(partes[2])
+		if err != nil {
+			log.Printf("Error al parsear cantidad en archivo %s: %v", fileName, err)
+			continue
+		}
+		productos[producto] = int32(cantidad)
+	}
+	return productos
+}
+
 // ProcessRequest maneja las solicitudes del Broker
 func (s *HextechServer) ProcessRequest(ctx context.Context, req *pb.ServerRequest) (*pb.ServerResponse, error) {
     s.vectorMutex.Lock()
     defer s.vectorMutex.Unlock()
-
+    log.Print(req)
     region := req.Region
     product := req.ProductName
     var message string
 
     switch req.OperationType {
     case pb.OperationType_AGREGAR:
+        log.Print("AGREGANDO PRODUCTO")
         s.AgregarProducto(region, product, req.Value)
         message = fmt.Sprintf("Producto agregado: %s en %s con cantidad %d", product, region, req.Value)
     case pb.OperationType_RENOMBRAR:
@@ -88,31 +141,39 @@ func (s *HextechServer) ProcessRequest(ctx context.Context, req *pb.ServerReques
 
 // AgregarProducto agrega un nuevo producto o actualiza su cantidad si ya existe
 func (s *HextechServer) AgregarProducto(region, product string, value int32) {
+    s.data[region] = leerArchivo(region)
     if s.data[region] == nil {
         s.data[region] = make(map[string]int32)
     }
     s.data[region][product] = value
+    escribirArchivo(region, s.data[region])
 }
 
 // RenombrarProducto cambia el nombre de un producto
 func (s *HextechServer) RenombrarProducto(region, product, newProductName string) {
+    s.data[region] = leerArchivo(region)
     if _, exists := s.data[region][product]; exists {
-        s.data[region][newProductName] = s.data[region][product]
         delete(s.data[region], product)
+        s.data[region][newProductName] = s.data[region][product]
+        escribirArchivo(region, s.data[region])
     }
 }
 
 // ActualizarValor modifica la cantidad de un producto en la región
 func (s *HextechServer) ActualizarValor(region, product string, newValue int32) {
+    s.data[region] = leerArchivo(region)
     if _, exists := s.data[region][product]; exists {
         s.data[region][product] = newValue
+        escribirArchivo(region, s.data[region])
     }
 }
 
 // BorrarProducto elimina un producto del registro de una región
 func (s *HextechServer) BorrarProducto(region, product string) {
+    s.data[region] = leerArchivo(region)
     if _, exists := s.data[region][product]; exists {
         delete(s.data[region], product)
+        escribirArchivo(region, s.data[region])
     }
 }
 
@@ -156,6 +217,7 @@ func main() {
         server := NuevoServidorHextech(i)
         port := fmt.Sprintf(":%d", 50050+i)
         go server.RunServer(port)
+        go server.ConsistenciaEventual()
     }
 
     // Mantiene el main activo para evitar que el programa termine

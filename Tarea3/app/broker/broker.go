@@ -71,7 +71,7 @@ func (b *Broker) ProcessRequest(ctx context.Context, req *supervisor_pb.Supervis
     if req.NewProductName != nil {
         serverReq.NewProductName = *(req.NewProductName)
     }
-
+    log.Print(serverReq)
     // Envía la solicitud al servidor y espera la respuesta
     serverRes, err := serverClient.ProcessRequest(ctx, serverReq)
     if err != nil {

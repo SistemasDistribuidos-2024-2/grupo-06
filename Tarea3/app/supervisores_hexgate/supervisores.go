@@ -159,33 +159,6 @@ func (s *Supervisor) LeerConsistente(region, producto string) {
 		time.Sleep(100 * time.Millisecond) // Retraso antes de reintentar
 		s.LeerConsistente(region, producto) // Reintenta
 	}
-/* 
-    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-    defer cancel() */
-
-    // Realiza la solicitud de lectura consistente
-    /* req := &pb.ReadRequest{
-        Region:      region,
-        ProductName: producto,
-    } */
-    /* res, err := s.client.ConsistentRead(ctx, req)
-    if err != nil {
-        log.Fatalf("Error al leer el producto: %v", err)
-    }
-
-    // Validar consistencia con el reloj vectorial local y el valor
-    if res.Status == pb.ResponseStatus_OK {
-        if esConsistente(res.VectorClock, registro.VectorClock) && res.Value == registro.Valor {
-            fmt.Printf("Lectura consistente: [%d, %d, %d] - Valor: %d\n",
-                res.VectorClock.Server1, res.VectorClock.Server2, res.VectorClock.Server3, res.Value)
-        } else {
-            log.Print("Datos no consistentes, reintentando...")
-            time.Sleep(100 * time.Millisecond) // Retraso antes de reintentar
-            s.LeerConsistente(region, producto) // Reintenta con el mismo servidor
-        }
-    } else {
-        log.Printf("Error en la lectura consistente: %s\n", res.Status.String())
-    } */
 }
 
 
