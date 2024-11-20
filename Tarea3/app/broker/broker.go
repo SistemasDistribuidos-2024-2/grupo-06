@@ -30,19 +30,24 @@ type Broker struct {
 
 // NewBroker crea una instancia del Broker y establece conexiones con los servidores Hextech
 func NewBroker() *Broker {
+    log.Print("Inicializando el Broker...")
     servers := make(map[int]server_pb.HextechServerServiceClient)
 
     // Conecta el Broker a los tres Servidores Hextech en sus puertos correspondientes
     for i := 1; i <= 3; i++ {
         address := fmt.Sprintf("localhost:%d", 50050+i)
+        log.Printf("Intentando conectar al Servidor Hextech %d en %s...", i, address)
         conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
         if err != nil {
             log.Fatalf("No se pudo conectar al Servidor Hextech %d: %v", i, err)
         }
         servers[i] = server_pb.NewHextechServerServiceClient(conn)
+        log.Printf("Conexión exitosa al Servidor Hextech %d", i)
     }
+    log.Print("Broker inicializado correctamente")
     return &Broker{servers: servers}
 }
+
 
 // ProcessRequest recibe solicitudes de los Supervisores Hexgate y las redirige al Servidor Hextech correspondiente
 func (b *Broker) ProcessRequest(ctx context.Context, req *supervisor_pb.SupervisorRequest) (*supervisor_pb.ServerResponse, error) {
@@ -155,20 +160,23 @@ func (b *Broker) selectServerID() int {
 }
 
 func main() {
+    log.Print("El Servidor Broker está iniciando...")
+
     // Inicializa el Broker y establece los servicios
     broker := NewBroker()
+    log.Print("Broker inicializado correctamente")
 
     // Configura el servidor gRPC y registra los servicios
     lis, err := net.Listen("tcp", brokerPort)
     if err != nil {
         log.Fatalf("Error al iniciar el Broker: %v", err)
     }
+    log.Printf("Broker escuchando en %v\n", brokerPort)
 
     grpcServer := grpc.NewServer()
     supervisor_pb.RegisterBrokerServiceServer(grpcServer, broker)
     jayce_pb.RegisterJayceBrokerServiceServer(grpcServer, broker)
 
-    log.Printf("Broker escuchando en %v\n", brokerPort)
     if err := grpcServer.Serve(lis); err != nil {
         log.Fatalf("Error al ejecutar el Broker: %v", err)
     }

@@ -36,13 +36,14 @@ type Supervisor struct {
 
 // NuevoSupervisor crea un nuevo cliente para comunicarse con el Broker
 func NuevoSupervisor() *Supervisor {
+    log.Print("Intentando conectar al Broker...")
     conn, err := grpc.Dial(brokerAddress, grpc.WithInsecure(), grpc.WithBlock())
     if err != nil {
         log.Fatalf("No se pudo conectar al Broker: %v", err)
     }
-    log.Print("Conexión exitosa al Broker") // Log de conexión exitosa
+    log.Print("Conexión exitosa al Broker")
     client := pb.NewBrokerServiceClient(conn)
-    return &Supervisor{client: client, conn: conn,registros: make(map[string]Registro),} // Asignamos la conexión
+    return &Supervisor{client: client, conn: conn, registros: make(map[string]Registro)}
 }
 
 // EnviarSolicitud envía una solicitud al Broker
@@ -167,20 +168,26 @@ func esConsistente(v1, v2 *pb.VectorClock) bool {
     return v1.Server1 >= v2.Server1 && v1.Server2 >= v2.Server2 && v1.Server3 >= v2.Server3
 }
 
-
 func main() {
+    log.Print("El supervisor está corriendo...")
+
+    log.Print("Intentando crear un nuevo supervisor...")
     supervisor := NuevoSupervisor()
     if supervisor == nil {
         log.Fatal("No se pudo crear el supervisor correctamente")
     } else {
         log.Print("Éxito al crear el supervisor")
     }
+
     defer func() {
+        log.Print("Intentando cerrar la conexión...")
         if err := supervisor.conn.Close(); err != nil { // Cierra la conexión usando conn
             log.Fatalf("Error al cerrar la conexión: %v", err)
         }
+        log.Print("Conexión cerrada correctamente")
     }()
 
+    log.Print("Ejemplos de uso de las funciones del supervisor")
     // Ejemplos de uso de las funciones del supervisor
     supervisor.AgregarProducto("Noxus", "Vino", 25)
     supervisor.RenombrarProducto("Noxus", "Vino", "Cerveza")

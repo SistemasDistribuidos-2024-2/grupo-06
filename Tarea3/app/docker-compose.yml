@@ -3,8 +3,6 @@ services:
   supervisores:
     build: ./supervisores_hexgate
     container_name: container_supervisores
-    ports:
-      - "50053:50053"
     networks:
       - network_tarea
   broker:
