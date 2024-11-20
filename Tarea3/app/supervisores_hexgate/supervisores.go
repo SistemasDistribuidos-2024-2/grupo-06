@@ -12,14 +12,8 @@ import (
 )
 
 const (
-    brokerAddress = "localhost:50051" // Dirección y puerto del Broker
+    brokerAddress = "localhost:50054" // Dirección y puerto del Broker
 )
-
-type Supervisor struct {
-    client pb.BrokerServiceClient
-    conn   *grpc.ClientConn // Almacenamos la conexión para cerrarla después
-}
-
 
 //Registros para el modelo de consistencia Read Your Writes
 
@@ -55,6 +49,13 @@ func NuevoSupervisor() *Supervisor {
 func (s *Supervisor) EnviarSolicitud(req *pb.SupervisorRequest) {
     ctx, cancel := context.WithTimeout(context.Background(), time.Second)
     defer cancel()
+    log.Print(req.Region)
+    log.Print(req.ProductName)
+    log.Print(req.OperationType)
+    if req.NewProductName != nil{
+        log.Print(*(req.NewProductName))
+    }
+    
 
     // Llamada gRPC al Broker
     res, err := s.client.ProcessRequest(ctx, req)
@@ -63,21 +64,25 @@ func (s *Supervisor) EnviarSolicitud(req *pb.SupervisorRequest) {
     }
     log.Print("Solicitud enviada correctamente") // Log de solicitud enviada correctamente
 
-    // Manejo de la respuesta del Broker
-    if res.Status == pb.ResponseStatus_OK {
-        fmt.Printf("Operación realizada exitosamente en el servidor")
-        fmt.Printf("Reloj vectorial: [%d, %d, %d]\n", res.VectorClock.Server1, res.VectorClock.Server2, res.VectorClock.Server3)
-        //Actualizando el estado local
-        key := fmt.Sprintf("%s-%s", req.Region, req.ProductName)
-        s.registros[key] = Registro{
-        Region:      req.Region,
-        Producto:    req.ProductName,
-        Valor:       req.Value,           // Almacena el valor de la cantidad del producto
-        VectorClock: res.VectorClock,     // Almacena el reloj vectorial recibido
-        Servidor:    brokerAddress, 
-    } else {
-        fmt.Printf("Error en la operación: %s\n", res.Message)
-    }
+	// Manejo de la respuesta del Broker
+	if res.Status == pb.ResponseStatus_OK {
+		fmt.Printf("Operación realizada exitosamente en el servidor\n")
+		fmt.Printf("Reloj vectorial: [%d, %d, %d]\n", res.VectorClock.Server1, res.VectorClock.Server2, res.VectorClock.Server3)
+
+		// Actualizando el estado local si es una operación de escritura
+		if req.OperationType != pb.OperationType_BORRAR {
+			key := fmt.Sprintf("%s-%s", req.Region, req.ProductName)
+			s.registros[key] = Registro{
+				Region:      req.Region,
+				Producto:    req.ProductName,
+				Valor:       *(res.Value),       // Valor actualizado del producto
+				VectorClock: res.VectorClock, // Reloj vectorial recibido
+				Servidor:    brokerAddress,
+			}
+		}
+	} else {
+		fmt.Printf("Error en la operación: %s\n", *(res.Message))
+	}
 }
 
 // AgregarProducto agrega un producto en el registro de una región
@@ -86,8 +91,9 @@ func (s *Supervisor) AgregarProducto(region, producto string, valor int32) {
         Region:       region,
         ProductName:  producto,
         OperationType: pb.OperationType_AGREGAR,
-        Value:        valor,
+        Value:        &valor,
     }
+    log.Print("Iniciando solicitud 1")
     s.EnviarSolicitud(req)
 }
 
@@ -97,7 +103,7 @@ func (s *Supervisor) RenombrarProducto(region, producto, nuevoNombre string) {
         Region:        region,
         ProductName:   producto,
         OperationType: pb.OperationType_RENOMBRAR,
-        NewProductName: nuevoNombre,
+        NewProductName: &nuevoNombre,
     }
     s.EnviarSolicitud(req)
 }
@@ -108,7 +114,7 @@ func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) 
         Region:       region,
         ProductName:  producto,
         OperationType: pb.OperationType_ACTUALIZAR,
-        Value:        nuevoValor,
+        Value:        &nuevoValor,
     }
     s.EnviarSolicitud(req)
 }
@@ -124,38 +130,64 @@ func (s *Supervisor) BorrarProducto(region, producto string) {
 }
 
 
-//Validación de consistencia en el modelo Read Your Writes
+// Validación de consistencia en el modelo Read Your Writes
 func (s *Supervisor) LeerConsistente(region, producto string) {
     key := fmt.Sprintf("%s-%s", region, producto)
     registro, existe := s.registros[key]
-    
+
     if !existe {
         log.Fatalf("No existe información local para %s en la región %s", producto, region)
     }
     
+    	// Construye una solicitud de lectura
+	req := &pb.SupervisorRequest{
+		Region:       region,
+		ProductName:  producto,
+		OperationType: pb.OperationType_ACTUALIZAR, // Tipo de operación ficticio para lectura
+	}
+
+    // Llama a EnviarSolicitud para realizar la lectura y validar
+    s.EnviarSolicitud(req)
+
+    // Validación del reloj vectorial y el valor
+	res := s.registros[key]
+	if esConsistente(res.VectorClock, registro.VectorClock) && res.Valor == registro.Valor {
+		fmt.Printf("Lectura consistente: [%d, %d, %d] - Valor: %d\n",
+			res.VectorClock.Server1, res.VectorClock.Server2, res.VectorClock.Server3, res.Valor)
+	} else {
+		log.Print("Datos no consistentes, reintentando...")
+		time.Sleep(100 * time.Millisecond) // Retraso antes de reintentar
+		s.LeerConsistente(region, producto) // Reintenta
+	}
+/* 
     ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-    defer cancel()
-    
-    // Realiza la solicitud de lectura
-    req := &pb.SupervisorRequest{
-        Region:       region,
-        ProductName:  producto,
-        OperationType: pb.OperationType_BORRAR, // Esto es solo un ejemplo; usa el tipo correcto para leer
-    }
-    res, err := s.client.ProcessRequest(ctx, req)
+    defer cancel() */
+
+    // Realiza la solicitud de lectura consistente
+    /* req := &pb.ReadRequest{
+        Region:      region,
+        ProductName: producto,
+    } */
+    /* res, err := s.client.ConsistentRead(ctx, req)
     if err != nil {
         log.Fatalf("Error al leer el producto: %v", err)
     }
 
     // Validar consistencia con el reloj vectorial local y el valor
-    if esConsistente(res.VectorClock, registro.VectorClock) && res.Value == registro.Valor {
-        fmt.Printf("Lectura consistente: [%d, %d, %d] - Valor: %d\n", 
-            res.VectorClock.Server1, res.VectorClock.Server2, res.VectorClock.Server3, res.Value)
+    if res.Status == pb.ResponseStatus_OK {
+        if esConsistente(res.VectorClock, registro.VectorClock) && res.Value == registro.Valor {
+            fmt.Printf("Lectura consistente: [%d, %d, %d] - Valor: %d\n",
+                res.VectorClock.Server1, res.VectorClock.Server2, res.VectorClock.Server3, res.Value)
+        } else {
+            log.Print("Datos no consistentes, reintentando...")
+            time.Sleep(100 * time.Millisecond) // Retraso antes de reintentar
+            s.LeerConsistente(region, producto) // Reintenta con el mismo servidor
+        }
     } else {
-        log.Print("Datos no consistentes, reintentando...")
-        s.LeerConsistente(region, producto) // Reintenta con el mismo servidor
-    }
+        log.Printf("Error en la lectura consistente: %s\n", res.Status.String())
+    } */
 }
+
 
 // Compara dos relojes vectoriales
 func esConsistente(v1, v2 *pb.VectorClock) bool {

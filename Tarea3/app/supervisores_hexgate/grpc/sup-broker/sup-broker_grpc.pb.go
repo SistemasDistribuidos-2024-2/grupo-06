@@ -25,8 +25,10 @@ const (
 // BrokerServiceClient is the client API for BrokerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Servicio del Broker para comunicación con Supervisores Hexgate
 type BrokerServiceClient interface {
-	// Servicio que recibe la solicitud de un Supervisor y la redirige a un Servidor Hextech
+	// Procesa solicitudes de Supervisores Hexgate (CRUD y validación de Read Your Writes)
 	ProcessRequest(ctx context.Context, in *SupervisorRequest, opts ...grpc.CallOption) (*ServerResponse, error)
 }
 
@@ -51,8 +53,10 @@ func (c *brokerServiceClient) ProcessRequest(ctx context.Context, in *Supervisor
 // BrokerServiceServer is the server API for BrokerService service.
 // All implementations must embed UnimplementedBrokerServiceServer
 // for forward compatibility.
+//
+// Servicio del Broker para comunicación con Supervisores Hexgate
 type BrokerServiceServer interface {
-	// Servicio que recibe la solicitud de un Supervisor y la redirige a un Servidor Hextech
+	// Procesa solicitudes de Supervisores Hexgate (CRUD y validación de Read Your Writes)
 	ProcessRequest(context.Context, *SupervisorRequest) (*ServerResponse, error)
 	mustEmbedUnimplementedBrokerServiceServer()
 }

@@ -52,9 +52,10 @@ func (b *Broker) ProcessRequest(ctx context.Context, req *supervisor_pb.Supervis
     b.serversMu.Unlock()
 
     if !exists {
+        errorMessage := "Servidor Hextech no encontrado"
         return &supervisor_pb.ServerResponse{
-            Status:  supervisor_pb.ResponseStatus_ERROR,
-            Message: "Servidor Hextech no encontrado",
+            Status: supervisor_pb.ResponseStatus_ERROR,
+            Message: &errorMessage,
         }, nil
     }
 
@@ -63,16 +64,21 @@ func (b *Broker) ProcessRequest(ctx context.Context, req *supervisor_pb.Supervis
         Region:        req.Region,
         ProductName:   req.ProductName,
         OperationType: server_pb.OperationType(req.OperationType),
-        Value:         req.Value,
-        NewProductName: req.NewProductName,
+    }
+    if req.Value != nil {
+        serverReq.Value = *(req.Value)
+    }
+    if req.NewProductName != nil {
+        serverReq.NewProductName = *(req.NewProductName)
     }
 
     // Envía la solicitud al servidor y espera la respuesta
     serverRes, err := serverClient.ProcessRequest(ctx, serverReq)
     if err != nil {
+        errorMessage := "Error al procesar la solicitud en el Servidor Hextech"
         return &supervisor_pb.ServerResponse{
             Status:  supervisor_pb.ResponseStatus_ERROR,
-            Message: "Error al procesar la solicitud en el Servidor Hextech",
+            Message: &errorMessage,
         }, nil
     }
 
@@ -86,6 +92,7 @@ func (b *Broker) ProcessRequest(ctx context.Context, req *supervisor_pb.Supervis
     return &supervisor_pb.ServerResponse{
         Status:      supervisor_pb.ResponseStatus_OK,
         VectorClock: convertedVectorClock,
+        Value: &serverReq.Value,
     }, nil
 }
 
@@ -113,7 +120,7 @@ func (b *Broker) ObtenerProducto(ctx context.Context, req *jayce_pb.JayceRequest
         }
 
         // Compara el reloj vectorial para encontrar la versión más reciente
-        if isNewerVectorClock(currentVectorClock, latestVectorClock) {
+        if isNewerVectorClockJayce(currentVectorClock, latestVectorClock) {
             latestVectorClock = currentVectorClock
         }
     }
@@ -133,8 +140,12 @@ func (b *Broker) ObtenerProducto(ctx context.Context, req *jayce_pb.JayceRequest
     }, nil
 }
 
-// isNewerVectorClock compara dos relojes vectoriales para determinar si uno es más nuevo
-func isNewerVectorClock(newer, current *jayce_pb.VectorClock) bool {
+// isNewerVectorClockJayce compara dos relojes vectoriales para determinar si uno es más nuevo
+func isNewerVectorClockJayce(newer, current *jayce_pb.VectorClock) bool {
+    return newer.Server1 >= current.Server1 && newer.Server2 >= current.Server2 && newer.Server3 >= current.Server3
+}
+
+func isNewerVectorClockSupervisor(newer, current *supervisor_pb.VectorClock) bool {
     return newer.Server1 >= current.Server1 && newer.Server2 >= current.Server2 && newer.Server3 >= current.Server3
 }
 

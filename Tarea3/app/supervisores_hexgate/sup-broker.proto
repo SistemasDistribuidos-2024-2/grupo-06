@@ -4,48 +4,36 @@ option go_package = "grpc/sup-broker";
 
 package supbroker;
 
-// Servidores actúan como cliente y Broker actúa como servidor (para la comunicación proto)
-
+// Servicio del Broker para comunicación con Supervisores Hexgate
 service BrokerService {
-    // Servicio que recibe la solicitud de un Supervisor y la redirige a un Servidor Hextech
+    // Procesa solicitudes de Supervisores Hexgate (CRUD y validación de Read Your Writes)
     rpc ProcessRequest(SupervisorRequest) returns (ServerResponse);
 }
 
+// Solicitudes enviadas por Supervisores al Broker
 message SupervisorRequest {
-    // Nombre de la región (ej. Noxus)
-    string region = 1;
-    
-    // Nombre del producto (ej. Vino)
-    string product_name = 2;
-
-    // Tipo de operación solicitada: AGREGAR, RENOMBRAR, ACTUALIZAR, BORRAR
-    OperationType operation_type = 3;
-    
-    // Valor opcional para operaciones de agregar o actualizar
-    int32 value = 4;
-
-    // Nuevo nombre opcional en caso de renombrar
-    optional string new_product_name = 5;
+    string region = 1;            // Nombre de la región (ej. Noxus)
+    string product_name = 2;      // Nombre del producto (ej. Vino)
+    OperationType operation_type = 3; // Tipo de operación: AGREGAR, RENOMBRAR, ACTUALIZAR, BORRAR
+    optional int32 value = 4;              // Valor opcional (cantidad) para agregar o actualizar
+    optional string new_product_name = 5; // Nuevo nombre opcional en caso de renombrar
+    optional VectorClock known_vector_clock = 6;   // Reloj vectorial conocido por el Supervisor
 }
 
-// Definición de los tipos de operación permitidos
+// Respuesta del Broker hacia los Supervisores
+message ServerResponse {
+    ResponseStatus status = 1;    // Estado de la operación (OK o ERROR)
+    VectorClock vector_clock = 2; // Reloj vectorial asociado al registro procesado
+    optional int32 value = 3;              // Valor del producto procesado (si corresponde)
+    optional string message = 4;           // Mensaje opcional en caso de error
+}
+
+// Tipos de operación permitidos
 enum OperationType {
     AGREGAR = 0;
     RENOMBRAR = 1;
     ACTUALIZAR = 2;
     BORRAR = 3;
-}
-
-message ServerResponse {
-    // Estado de la respuesta: OK o ERROR
-    ResponseStatus status = 1;
-    
-    // Reloj vectorial asociado a la última versión del registro solicitado
-    VectorClock vector_clock = 2;
-    
-    // Mensaje opcional en caso de error
-    string message = 3;
-    
 }
 
 // Estado de la respuesta
@@ -54,7 +42,7 @@ enum ResponseStatus {
     ERROR = 1;
 }
 
-// Reloj vectorial que representa la versión de los datos en los servidores
+// Representación del reloj vectorial
 message VectorClock {
     int32 server1 = 1; // Contador de cambios en Servidor Hextech 1
     int32 server2 = 2; // Contador de cambios en Servidor Hextech 2
