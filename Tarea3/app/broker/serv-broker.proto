@@ -1,16 +1,16 @@
 syntax = "proto3";
 
-option go_package = "grpc/serv-bro";
+option go_package = "grpc/serv_broker";
 
-package serv-bro;
+package serv_broker;
 
-// Servicio del Broker para comunicación con Supervisores Hexgate
+// Servicio del Broker para comunicación con Supervisores
 service BrokerService {
     // Selección inicial de un servidor para el Supervisor
-    rpc GetRandomServer(ServerRequest) returns (ServerResponse);
+    rpc GetRandomServer (ServerRequest) returns (ServerResponse);
 
     // Resuelve inconsistencias notificadas por el Supervisor
-    rpc ResolveInconsistency(InconsistencyRequest) returns (ServerResponse);
+    rpc ResolveInconsistency (InconsistencyRequest) returns (ServerResponse);
 }
 
 // Solicitud para obtener un servidor
@@ -22,6 +22,8 @@ message ServerRequest {
 // Respuesta del Broker
 message ServerResponse {
     string server_address = 1;        // Dirección del servidor asignado
+    VectorClock server_clock = 2; // Reloj vectorial del Supervisor
+
 }
 
 // Solicitud de inconsistencia enviada por el Supervisor
@@ -36,4 +38,9 @@ message VectorClock {
     int32 server1 = 1;  // Reloj de servidor 1
     int32 server2 = 2;  // Reloj de servidor 2
     int32 server3 = 3;  // Reloj de servidor 3
+}
+
+// Servicio para interactuar con el servidor Hextech (que debería estar en el código de los servidores Hextech)
+service HextechServerService {
+    rpc GetVectorClock (ServerRequest) returns (ServerResponse);
 }

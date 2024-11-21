@@ -88,7 +88,7 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 
 	return &supserv_pb.ServerResponse{
 		Status:      supserv_pb.ResponseStatus_OK,
-		VectorClock: vectorClock,
+		ServerClock: vectorClock,
 	}, nil
 }
 
@@ -106,7 +106,7 @@ func (s *HextechServer) GetVectorClock(ctx context.Context, req *servbroker_pb.S
 	log.Printf("Reloj vectorial enviado al Broker: [%d, %d, %d]", s.vectorClock[0], s.vectorClock[1], s.vectorClock[2])
 
 	return &servbroker_pb.ServerResponse{
-		VectorClock: vectorClock,
+		ServerClock: vectorClock,
 	}, nil
 }
 

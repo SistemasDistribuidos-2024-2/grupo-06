@@ -22,6 +22,8 @@ message ServerRequest {
 // Respuesta del Broker
 message ServerResponse {
     string server_address = 1;        // Dirección del servidor asignado
+    VectorClock server_clock = 2; // Reloj vectorial
+
 }
 
 // Solicitud de inconsistencia enviada por el Supervisor
