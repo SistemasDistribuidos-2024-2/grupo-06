@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	supserv_pb "servidores_hextech/grpc/sup-serv" // Comunicación con Supervisores
-	supbroker_pb "servidores_hextech/grpc/serv_broker" // Comunicación con el Broker
+	servbroker_pb "servidores_hextech/grpc/serv_broker" // Comunicación con el Broker
 	"google.golang.org/grpc"
 )
 
@@ -23,7 +23,7 @@ const (
 // HextechServer representa un servidor Hextech
 type HextechServer struct {
 	supserv_pb.UnimplementedHextechServiceServer    // Servicio para Supervisores
-	supbroker_pb.UnimplementedHextechServerServiceServer // Servicio para el Broker
+	servbroker_pb.UnimplementedHextechServerServiceServer // Servicio para el Broker
 	serverID       int                              // Identificador único del servidor
 	vectorClock    [3]int32                         // Reloj vectorial del servidor
 	data           map[string]map[string]int32      // Almacén de productos por región
@@ -93,11 +93,11 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 }
 
 // **GetVectorClock**: Método para devolver el reloj vectorial al Broker
-func (s *HextechServer) GetVectorClock(ctx context.Context, req *supbroker_pb.ServerRequest) (*supbroker_pb.ServerResponse, error) {
+func (s *HextechServer) GetVectorClock(ctx context.Context, req *servbroker_pb.ServerRequest) (*servbroker_pb.ServerResponse, error) {
 	s.vectorMutex.Lock()
 	defer s.vectorMutex.Unlock()
 
-	vectorClock := &supbroker_pb.VectorClock{
+	vectorClock := &servbroker_pb.VectorClock{
 		Server1: s.vectorClock[0],
 		Server2: s.vectorClock[1],
 		Server3: s.vectorClock[2],
@@ -105,7 +105,7 @@ func (s *HextechServer) GetVectorClock(ctx context.Context, req *supbroker_pb.Se
 
 	log.Printf("Reloj vectorial enviado al Broker: [%d, %d, %d]", s.vectorClock[0], s.vectorClock[1], s.vectorClock[2])
 
-	return &supbroker_pb.ServerResponse{
+	return &servbroker_pb.ServerResponse{
 		VectorClock: vectorClock,
 	}, nil
 }
@@ -202,7 +202,7 @@ func (s *HextechServer) RunServer(port string) {
 
 	grpcServer := grpc.NewServer()
 	supserv_pb.RegisterHextechServiceServer(grpcServer, s)
-	supbroker_pb.RegisterHextechServerServiceServer(grpcServer, s)
+	servbroker_pb.RegisterHextechServerServiceServer(grpcServer, s)
 
 	log.Printf("Servidor Hextech %d escuchando en el puerto %v\n", s.serverID, port)
 	if err := grpcServer.Serve(lis); err != nil {
