@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	pb "supervisores_hexgate/grpc/sup-broker"   // Proto para comunicarse con el Broker
-	hexpb "supervisores_hexgate/grpc/sup-serv" // Proto para comunicarse con los Servidores Hextech
+	pb "supervisor_2/grpc/sup-broker"  // Proto para comunicarse con el Broker
+	hexpb "supervisor_2/grpc/sup-serv" // Proto para comunicarse con los Servidores Hextech
 
 	"google.golang.org/grpc"
 )
@@ -100,7 +100,7 @@ func (s *Supervisor) EnviarSolicitudAServidor(direccion string, req *hexpb.Super
 		}
 		return true
 	} else if res.Status == hexpb.ResponseStatus_ERROR {
-		fmt.Printf("Error: %s\n", res.Message)
+		fmt.Printf("Error: %s\n", *(res.Message))
 		return false
 	}
 	return false
@@ -108,10 +108,15 @@ func (s *Supervisor) EnviarSolicitudAServidor(direccion string, req *hexpb.Super
 
 // **Informar inconsistencia al Broker y obtener nuevo servidor**
 func (s *Supervisor) ResolverInconsistencia(region, producto string, vectorLocal *hexpb.VectorClock) string {
+	currentVectorClock := &pb.VectorClock{
+		Server1: vectorLocal.Server1,
+		Server2: vectorLocal.Server2,
+		Server3: vectorLocal.Server3,
+	}
 	req := &pb.InconsistencyRequest{
 		Region:           region,
 		ProductName:      producto,
-		SupervisorClock:  vectorLocal,
+		SupervisorClock:  currentVectorClock,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -203,6 +208,71 @@ func (s *Supervisor) AgregarProducto(region, producto string, valor int32) {
 			ProductName:   producto,
 			OperationType: hexpb.OperationType_AGREGAR,
 			Value:         &valor,
+		}
+		s.EnviarSolicitudAServidor(direccion, req)
+	}
+}
+
+// RenombrarProducto renombra un producto en el registro de una región
+func (s *Supervisor) RenombrarProducto(region, producto, nuevoNombre string) {
+    if !s.LeerConsistente(region, producto) {
+		direccion := s.ResolverInconsistencia(region, producto, nil)
+		req := &hexpb.SupervisorRequest{
+			Region:        region,
+			ProductName:   producto,
+			OperationType: hexpb.OperationType_RENOMBRAR,
+		}
+		s.EnviarSolicitudAServidor(direccion, req)
+	} else {
+		direccion := s.ObtenerServidor()
+		req := &hexpb.SupervisorRequest{
+			Region:        region,
+			ProductName:   producto,
+			OperationType: hexpb.OperationType_RENOMBRAR,
+			NewProductName: &nuevoNombre,
+		}
+		s.EnviarSolicitudAServidor(direccion, req)
+	}
+}
+
+// ActualizarValor actualiza el valor de un producto en el registro de una región
+func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) {
+    if !s.LeerConsistente(region, producto) {
+		direccion := s.ResolverInconsistencia(region, producto, nil)
+		req := &hexpb.SupervisorRequest{
+			Region:        region,
+			ProductName:   producto,
+			OperationType: hexpb.OperationType_RENOMBRAR,
+		}
+		s.EnviarSolicitudAServidor(direccion, req)
+	} else {
+		direccion := s.ObtenerServidor()
+		req := &hexpb.SupervisorRequest{
+			Region:       region,
+			ProductName:  producto,
+			OperationType: hexpb.OperationType_ACTUALIZAR,
+			Value:        &nuevoValor,
+		}
+		s.EnviarSolicitudAServidor(direccion, req)
+	}
+}
+
+// BorrarProducto elimina un producto del registro de una región
+func (s *Supervisor) BorrarProducto(region, producto string) {
+	if !s.LeerConsistente(region, producto) {
+		direccion := s.ResolverInconsistencia(region, producto, nil)
+		req := &hexpb.SupervisorRequest{
+			Region:        region,
+			ProductName:   producto,
+			OperationType: hexpb.OperationType_RENOMBRAR,
+		}
+		s.EnviarSolicitudAServidor(direccion, req)
+	} else {
+		direccion := s.ObtenerServidor()
+		req := &hexpb.SupervisorRequest{
+			Region:       region,
+			ProductName:  producto,
+			OperationType: hexpb.OperationType_BORRAR,
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
 	}

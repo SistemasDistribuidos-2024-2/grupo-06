@@ -11,13 +11,15 @@ import (
 	"strings"
 	"sync"
 
-	supserv_pb "servidores_hextech/grpc/sup-serv" // Comunicación con Supervisores
-	servbroker_pb "servidores_hextech/grpc/serv_broker" // Comunicación con el Broker
+	servbroker_pb "servidor_1/grpc/serv_broker" // Comunicación con el Broker
+	supserv_pb "servidor_1/grpc/sup-serv"       // Comunicación con Supervisores
+
 	"google.golang.org/grpc"
 )
 
 const (
-	port = ":50052" // Puerto donde escuchará el servidor
+	idServer = 1    
+	port = ":5005" + string(rune(idServer)) // Puerto donde escuchará el servidor
 )
 
 // HextechServer representa un servidor Hextech
@@ -57,7 +59,7 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 		message = fmt.Sprintf("Producto agregado: %s en %s con cantidad %d", product, region, req.Value)
 	case supserv_pb.OperationType_RENOMBRAR:
 		s.RenombrarProducto(region, product, *req.NewProductName)
-		message = fmt.Sprintf("Producto renombrado: %s en %s a %s", product, region, req.NewProductName)
+		message = fmt.Sprintf("Producto renombrado: %s en %s a %s", product, region, *(req.NewProductName))
 	case supserv_pb.OperationType_ACTUALIZAR:
 		s.ActualizarValor(region, product, *req.Value)
 		message = fmt.Sprintf("Producto actualizado: %s en %s con cantidad %d", product, region, req.Value)
@@ -65,9 +67,10 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 		s.BorrarProducto(region, product)
 		message = fmt.Sprintf("Producto borrado: %s en %s", product, region)
 	default:
+		errorMessage := "Operación no reconocida"
 		return &supserv_pb.ServerResponse{
 			Status:  supserv_pb.ResponseStatus_ERROR,
-			Message: "Operación no reconocida",
+			Message: &errorMessage,
 		}, nil
 	}
 
@@ -88,7 +91,7 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 
 	return &supserv_pb.ServerResponse{
 		Status:      supserv_pb.ResponseStatus_OK,
-		ServerClock: vectorClock,
+		VectorClock: vectorClock,
 	}, nil
 }
 
@@ -211,11 +214,8 @@ func (s *HextechServer) RunServer(port string) {
 }
 
 func main() {
-	for i := 1; i <= 3; i++ {
-		server := NuevoServidorHextech(i)
-		port := fmt.Sprintf(":%d", 50050+i)
-		go server.RunServer(port)
-	}
+	server := NuevoServidorHextech(idServer)
+	go server.RunServer(port)
 
 	select {} // Mantener el programa activo
 }
