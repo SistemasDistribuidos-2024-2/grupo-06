@@ -4,47 +4,35 @@ option go_package = "grpc/sup-broker";
 
 package supbroker;
 
-// Servicio del Broker para comunicación con Supervisores Hexgate
+// Servicio del Broker para comunicación con Supervisores
 service BrokerService {
-    // Procesa solicitudes de Supervisores Hexgate (CRUD y validación de Read Your Writes)
-    rpc ProcessRequest(SupervisorRequest) returns (ServerResponse);
+    // Solicita la dirección de un Servidor Hextech
+    rpc GetServer(ServerRequest) returns (ServerResponse);
+
+    // Resuelve inconsistencias notificadas por el Supervisor
+    rpc ResolveInconsistency(InconsistencyRequest) returns (ServerResponse);
 }
 
-// Solicitudes enviadas por Supervisores al Broker
-message SupervisorRequest {
-    string region = 1;            // Nombre de la región (ej. Noxus)
-    string product_name = 2;      // Nombre del producto (ej. Vino)
-    OperationType operation_type = 3; // Tipo de operación: AGREGAR, RENOMBRAR, ACTUALIZAR, BORRAR
-    optional int32 value = 4;              // Valor opcional (cantidad) para agregar o actualizar
-    optional string new_product_name = 5; // Nuevo nombre opcional en caso de renombrar
-    optional VectorClock known_vector_clock = 6;   // Reloj vectorial conocido por el Supervisor
+// Solicitud básica para obtener un servidor
+message ServerRequest {
+    string region = 1; // Región opcional para balanceo basado en región
 }
 
-// Respuesta del Broker hacia los Supervisores
+// Respuesta con la dirección del Servidor Hextech
 message ServerResponse {
-    ResponseStatus status = 1;    // Estado de la operación (OK o ERROR)
-    VectorClock vector_clock = 2; // Reloj vectorial asociado al registro procesado
-    optional int32 value = 3;              // Valor del producto procesado (si corresponde)
-    optional string message = 4;           // Mensaje opcional en caso de error
+    string server_address = 1; // Dirección del Servidor Hextech asignado
 }
 
-// Tipos de operación permitidos
-enum OperationType {
-    AGREGAR = 0;
-    RENOMBRAR = 1;
-    ACTUALIZAR = 2;
-    BORRAR = 3;
+// Solicitud de inconsistencia enviada por el Supervisor
+message InconsistencyRequest {
+    string region = 1;            // Región del producto
+    string product_name = 2;      // Nombre del producto
+    VectorClock supervisor_clock = 3; // Reloj vectorial del Supervisor
 }
 
-// Estado de la respuesta
-enum ResponseStatus {
-    OK = 0;
-    ERROR = 1;
-}
-
-// Representación del reloj vectorial
+// Reloj vectorial para sincronización entre servidores
 message VectorClock {
-    int32 server1 = 1; // Contador de cambios en Servidor Hextech 1
-    int32 server2 = 2; // Contador de cambios en Servidor Hextech 2
-    int32 server3 = 3; // Contador de cambios en Servidor Hextech 3
+    int32 server1 = 1;  // Reloj de servidor 1
+    int32 server2 = 2;  // Reloj de servidor 2
+    int32 server3 = 3;  // Reloj de servidor 3
 }

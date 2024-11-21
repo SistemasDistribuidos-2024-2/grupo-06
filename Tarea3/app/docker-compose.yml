@@ -5,6 +5,7 @@ services:
     container_name: container_supervisores
     networks:
       - network_tarea
+
   broker:
     build: ./broker
     container_name: container_broker
@@ -12,6 +13,40 @@ services:
       - "50054:50054"
     networks:
       - network_tarea
+
+  # Servidor Hextech 1
+  hextech1:
+    build: ./servidores_hextech
+    container_name: container_hextech1
+    networks:
+      - network_tarea
+    ports:
+      - "50051:50051" # Exponiendo el puerto del servidor Hextech 1
+    environment:
+      - SERVER_ID=1
+
+  # Servidor Hextech 2
+  hextech2:
+    build: ./servidores_hextech
+    container_name: container_hextech2
+    networks:
+      - network_tarea
+    ports:
+      - "50052:50052" # Exponiendo el puerto del servidor Hextech 2
+    environment:
+      - SERVER_ID=2
+
+  # Servidor Hextech 3
+  hextech3:
+    build: ./servidores_hextech
+    container_name: container_hextech3
+    networks:
+      - network_tarea
+    ports:
+      - "50053:50053" # Exponiendo el puerto del servidor Hextech 3
+    environment:
+      - SERVER_ID=3
+
 #Red EXTERNA que se crea mediante docker
 networks:
   network_tarea:
