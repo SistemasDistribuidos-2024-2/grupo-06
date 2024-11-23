@@ -19,17 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BrokerService_ProcessRequest_FullMethodName = "/supbroker.BrokerService/ProcessRequest"
+	BrokerService_GetServer_FullMethodName            = "/supbroker.BrokerService/GetServer"
+	BrokerService_ResolveInconsistency_FullMethodName = "/supbroker.BrokerService/ResolveInconsistency"
 )
 
 // BrokerServiceClient is the client API for BrokerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Servicio del Broker para comunicación con Supervisores Hexgate
+// Servicio del Broker para comunicación con Supervisores
 type BrokerServiceClient interface {
-	// Procesa solicitudes de Supervisores Hexgate (CRUD y validación de Read Your Writes)
-	ProcessRequest(ctx context.Context, in *SupervisorRequest, opts ...grpc.CallOption) (*ServerResponse, error)
+	// Solicita la dirección de un Servidor Hextech
+	GetServer(ctx context.Context, in *ServerRequest, opts ...grpc.CallOption) (*ServerResponse, error)
+	// Resuelve inconsistencias notificadas por el Supervisor
+	ResolveInconsistency(ctx context.Context, in *InconsistencyRequest, opts ...grpc.CallOption) (*ServerResponse, error)
 }
 
 type brokerServiceClient struct {
@@ -40,10 +43,20 @@ func NewBrokerServiceClient(cc grpc.ClientConnInterface) BrokerServiceClient {
 	return &brokerServiceClient{cc}
 }
 
-func (c *brokerServiceClient) ProcessRequest(ctx context.Context, in *SupervisorRequest, opts ...grpc.CallOption) (*ServerResponse, error) {
+func (c *brokerServiceClient) GetServer(ctx context.Context, in *ServerRequest, opts ...grpc.CallOption) (*ServerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ServerResponse)
-	err := c.cc.Invoke(ctx, BrokerService_ProcessRequest_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, BrokerService_GetServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *brokerServiceClient) ResolveInconsistency(ctx context.Context, in *InconsistencyRequest, opts ...grpc.CallOption) (*ServerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServerResponse)
+	err := c.cc.Invoke(ctx, BrokerService_ResolveInconsistency_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +67,12 @@ func (c *brokerServiceClient) ProcessRequest(ctx context.Context, in *Supervisor
 // All implementations must embed UnimplementedBrokerServiceServer
 // for forward compatibility.
 //
-// Servicio del Broker para comunicación con Supervisores Hexgate
+// Servicio del Broker para comunicación con Supervisores
 type BrokerServiceServer interface {
-	// Procesa solicitudes de Supervisores Hexgate (CRUD y validación de Read Your Writes)
-	ProcessRequest(context.Context, *SupervisorRequest) (*ServerResponse, error)
+	// Solicita la dirección de un Servidor Hextech
+	GetServer(context.Context, *ServerRequest) (*ServerResponse, error)
+	// Resuelve inconsistencias notificadas por el Supervisor
+	ResolveInconsistency(context.Context, *InconsistencyRequest) (*ServerResponse, error)
 	mustEmbedUnimplementedBrokerServiceServer()
 }
 
@@ -68,8 +83,11 @@ type BrokerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedBrokerServiceServer struct{}
 
-func (UnimplementedBrokerServiceServer) ProcessRequest(context.Context, *SupervisorRequest) (*ServerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ProcessRequest not implemented")
+func (UnimplementedBrokerServiceServer) GetServer(context.Context, *ServerRequest) (*ServerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServer not implemented")
+}
+func (UnimplementedBrokerServiceServer) ResolveInconsistency(context.Context, *InconsistencyRequest) (*ServerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveInconsistency not implemented")
 }
 func (UnimplementedBrokerServiceServer) mustEmbedUnimplementedBrokerServiceServer() {}
 func (UnimplementedBrokerServiceServer) testEmbeddedByValue()                       {}
@@ -92,20 +110,38 @@ func RegisterBrokerServiceServer(s grpc.ServiceRegistrar, srv BrokerServiceServe
 	s.RegisterService(&BrokerService_ServiceDesc, srv)
 }
 
-func _BrokerService_ProcessRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SupervisorRequest)
+func _BrokerService_GetServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BrokerServiceServer).ProcessRequest(ctx, in)
+		return srv.(BrokerServiceServer).GetServer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: BrokerService_ProcessRequest_FullMethodName,
+		FullMethod: BrokerService_GetServer_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BrokerServiceServer).ProcessRequest(ctx, req.(*SupervisorRequest))
+		return srv.(BrokerServiceServer).GetServer(ctx, req.(*ServerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BrokerService_ResolveInconsistency_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InconsistencyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BrokerServiceServer).ResolveInconsistency(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BrokerService_ResolveInconsistency_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BrokerServiceServer).ResolveInconsistency(ctx, req.(*InconsistencyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -118,8 +154,12 @@ var BrokerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*BrokerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ProcessRequest",
-			Handler:    _BrokerService_ProcessRequest_Handler,
+			MethodName: "GetServer",
+			Handler:    _BrokerService_GetServer_Handler,
+		},
+		{
+			MethodName: "ResolveInconsistency",
+			Handler:    _BrokerService_ResolveInconsistency_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

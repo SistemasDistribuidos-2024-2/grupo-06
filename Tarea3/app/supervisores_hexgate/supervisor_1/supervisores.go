@@ -45,11 +45,12 @@ func NuevoSupervisor() *Supervisor {
 }
 
 // **Obtener dirección del servidor Hextech desde el Broker**
-func (s *Supervisor) ObtenerServidor() string {
-	req := &pb.ServerRequest{}
+func (s *Supervisor) GetServer(region string) string {
+	req := &pb.ServerRequest{
+		Region: region,
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-
 	res, err := s.client.GetServer(ctx, req)
 	if err != nil {
 		log.Fatalf("Error al obtener servidor del Broker: %v", err)
@@ -93,9 +94,13 @@ func (s *Supervisor) EnviarSolicitudAServidor(direccion string, req *hexpb.Super
 			s.registros[key] = Registro{
 				Region:      req.Region,
 				Producto:    req.ProductName,
-				Valor:       *(res.Value),
 				VectorClock: res.VectorClock,
 				Servidor:    direccion,
+			}
+			if res.Value != nil {
+				s.registros[key] = Registro{
+					Valor: *(res.Value),
+				}
 			}
 		}
 		return true
@@ -140,7 +145,7 @@ func (s *Supervisor) LeerConsistente(region, producto string) bool {
 		log.Fatalf("No existe información local para %s en la región %s", producto, region)
 	}
 
-	direccion := s.ObtenerServidor()
+	direccion := s.GetServer(region)
 	req := &hexpb.SupervisorRequest{
 		Region:           region,
 		ProductName:      producto,
@@ -192,25 +197,16 @@ func esConsistente(v1, v2 *hexpb.VectorClock) bool {
 
 // **Operaciones del Supervisor**
 func (s *Supervisor) AgregarProducto(region, producto string, valor int32) {
-	if !s.LeerConsistente(region, producto) {
-		direccion := s.ResolverInconsistencia(region, producto, nil)
-		req := &hexpb.SupervisorRequest{
-			Region:        region,
-			ProductName:   producto,
-			OperationType: hexpb.OperationType_AGREGAR,
-			Value:         &valor,
-		}
-		s.EnviarSolicitudAServidor(direccion, req)
-	} else {
-		direccion := s.ObtenerServidor()
-		req := &hexpb.SupervisorRequest{
-			Region:        region,
-			ProductName:   producto,
-			OperationType: hexpb.OperationType_AGREGAR,
-			Value:         &valor,
-		}
-		s.EnviarSolicitudAServidor(direccion, req)
+	log.Print("Agregando producto...")
+	direccion := s.GetServer(region)
+	req := &hexpb.SupervisorRequest{
+		Region:        region,
+		ProductName:   producto,
+		OperationType: hexpb.OperationType_AGREGAR,
+		Value:         &valor,
 	}
+	log.Print("lista la direccion")
+	s.EnviarSolicitudAServidor(direccion, req)
 }
 
 // RenombrarProducto renombra un producto en el registro de una región
@@ -224,7 +220,7 @@ func (s *Supervisor) RenombrarProducto(region, producto, nuevoNombre string) {
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
 	} else {
-		direccion := s.ObtenerServidor()
+		direccion := s.GetServer(region)
 		req := &hexpb.SupervisorRequest{
 			Region:        region,
 			ProductName:   producto,
@@ -246,7 +242,7 @@ func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) 
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
 	} else {
-		direccion := s.ObtenerServidor()
+		direccion := s.GetServer(region)
 		req := &hexpb.SupervisorRequest{
 			Region:       region,
 			ProductName:  producto,
@@ -268,7 +264,7 @@ func (s *Supervisor) BorrarProducto(region, producto string) {
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
 	} else {
-		direccion := s.ObtenerServidor()
+		direccion := s.GetServer(region)
 		req := &hexpb.SupervisorRequest{
 			Region:       region,
 			ProductName:  producto,

@@ -19,7 +19,7 @@ import (
 
 const (
 	idServer = 2
-	port = ":5005" + string(rune(idServer)) // Puerto donde escuchará el servidor
+	port = ":50052" // Puerto donde escuchará el servidor
 )
 
 // HextechServer representa un servidor Hextech
