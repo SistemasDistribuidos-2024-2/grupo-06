@@ -18,6 +18,13 @@ const (
 type Jayce struct {
 	client          pb.JayceBrokerServiceClient
 	lastVectorClock *pb.VectorClock // Último reloj vectorial recibido para Monotonic Reads
+	consultas       []Consulta      // Almacena las consultas realizadas
+}
+
+type Consulta struct {
+	Solicitud *pb.JayceRequest
+	Respuesta *pb.JayceResponse
+	Error     error
 }
 
 // NewJayce crea una nueva instancia de Jayce y conecta con el Broker
@@ -33,7 +40,7 @@ func NewJayce() *Jayce {
 }
 
 // ObtenerProducto envía una solicitud de consulta al Broker para obtener la cantidad de un producto en una región específica
-func (j *Jayce) ObtenerProducto(region, product string) {
+func (j *Jayce) ObtenerProducto(region, product string) (*pb.JayceRequest, *pb.JayceResponse, error) {
 	// Crea la solicitud
 	req := &pb.JayceRequest{
 		Region:      region,
@@ -49,13 +56,14 @@ func (j *Jayce) ObtenerProducto(region, product string) {
 	res, err := j.client.ObtenerProducto(ctx, req)
 	if err != nil {
 		log.Printf("Error al obtener el producto: %v", err)
-		return
+		return req, nil, err
 	}
 	log.Printf("Solicitud enviada correctamente al Broker: Región: %s, Producto: %s", req.Region, req.ProductName)
+
 	// Verifica el estado de la respuesta
 	if res.Status == pb.ResponseStatus_ERROR {
 		log.Printf("Error en la consulta: %s", res.Message)
-		return
+		return req, res, fmt.Errorf("error en la consulta: %s", res.Message)
 	}
 
 	// Log de la respuesta del Broker
@@ -65,7 +73,7 @@ func (j *Jayce) ObtenerProducto(region, product string) {
 	// Verifica la consistencia Monotonic Reads con el reloj vectorial
 	if j.lastVectorClock != nil && !isVectorClockConsistent(j.lastVectorClock, res.VectorClock) {
 		log.Println("Inconsistencia detectada: la lectura retrocede en el tiempo.")
-		return
+		return req, res, fmt.Errorf("inconsistencia detectada: la lectura retrocede en el tiempo")
 	}
 
 	// Imprime los datos de la respuesta
@@ -74,6 +82,18 @@ func (j *Jayce) ObtenerProducto(region, product string) {
 
 	// Actualiza el último reloj vectorial para Monotonic Reads
 	j.lastVectorClock = res.VectorClock
+
+	return req, res, nil
+}
+
+// AlmacenarConsulta guarda la solicitud y la respuesta en la memoria si no hay error
+func (j *Jayce) AlmacenarConsulta(req *pb.JayceRequest, res *pb.JayceResponse, err error) {
+	if err == nil {
+		j.consultas = append(j.consultas, Consulta{Solicitud: req, Respuesta: res, Error: err})
+		log.Printf("Consulta agregada correctamente: Región: %s, Producto: %s", req.Region, req.ProductName)
+	} else {
+		log.Printf("No se pudo agregar la consulta, HUBO UN ERROR AL OBTENER EL PRODUCTO(FUNCION Obtener Producto)!: Región: %s, Producto: %s, Error: %v", req.Region, req.ProductName, err)
+	}
 }
 
 // isVectorClockConsistent verifica si el nuevo reloj vectorial es consistente con el último (Monotonic Reads)
@@ -83,12 +103,23 @@ func isVectorClockConsistent(last, current *pb.VectorClock) bool {
 
 func main() {
 	// Inicializa a Jayce y realiza consultas
-	log.Println("Inciando servidor Jayce...")
+	log.Println("Iniciando servidor Jayce...")
 	jayce := NewJayce()
 	log.Println("Jayce ha sido inicializado")
 
 	// Ejemplo de consultas realizadas por Jayce
-	jayce.ObtenerProducto("Noxus", "Vino")
-	jayce.ObtenerProducto("Demacia", "Espadas")
-	jayce.ObtenerProducto("Piltover", "Cristales Hextech")
+	req1, res1, err1 := jayce.ObtenerProducto("Noxus", "Vino")
+	jayce.AlmacenarConsulta(req1, res1, err1)
+
+	req2, res2, err2 := jayce.ObtenerProducto("Demacia", "Espadas")
+	jayce.AlmacenarConsulta(req2, res2, err2)
+
+	req3, res3, err3 := jayce.ObtenerProducto("Piltover", "Cristales Hextech")
+	jayce.AlmacenarConsulta(req3, res3, err3)
+
+	// Imprime las consultas almacenadas
+	for _, consulta := range jayce.consultas {
+		log.Printf("Consulta: Región: %s, Producto: %s, Respuesta: %v, Error: %v",
+			consulta.Solicitud.Region, consulta.Solicitud.ProductName, consulta.Respuesta, consulta.Error)
+	}
 }
