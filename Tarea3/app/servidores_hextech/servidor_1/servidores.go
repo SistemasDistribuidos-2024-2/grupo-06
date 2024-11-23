@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	jayceserver_pb "servidor_1/grpc/jayce-server"
 	servbroker_pb "servidor_1/grpc/serv_broker" // Comunicación con el Broker
 	supserv_pb "servidor_1/grpc/sup-serv"       // Comunicación con Supervisores
 
@@ -26,6 +27,7 @@ const (
 type HextechServer struct {
 	supserv_pb.UnimplementedHextechServiceServer    // Servicio para Supervisores
 	servbroker_pb.UnimplementedHextechServerServiceServer // Servicio para el Broker
+	jayceserver_pb.UnimplementedJayceServerServiceServer
 	serverID       int                              // Identificador único del servidor
 	vectorClock    [3]int32                         // Reloj vectorial del servidor
 	data           map[string]map[string]int32      // Almacén de productos por región
@@ -206,11 +208,38 @@ func (s *HextechServer) RunServer(port string) {
 	grpcServer := grpc.NewServer()
 	supserv_pb.RegisterHextechServiceServer(grpcServer, s)
 	servbroker_pb.RegisterHextechServerServiceServer(grpcServer, s)
+	jayceserver_pb.RegisterJayceServerServiceServer(grpcServer, s)
 
 	log.Printf("Servidor Hextech %d escuchando en el puerto %v\n", s.serverID, port)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Error al ejecutar el servidor Hextech %d: %v", s.serverID, err)
 	}
+}
+
+func (s *HextechServer) ObtenerProducto(ctx context.Context, req *jayceserver_pb.JayceRequest) (*jayceserver_pb.JayceResponse, error){
+	productos := leerArchivo(req.Region)
+	cantidad := int32(0)
+	for p := range productos {
+		if p == req.ProductName {
+			cantidad = productos[p]
+		}
+	}
+
+	s.vectorMutex.Lock()
+	defer s.vectorMutex.Unlock()
+
+	vectorClock := &jayceserver_pb.VectorClock{
+		Server1: s.vectorClock[0],
+		Server2: s.vectorClock[1],
+		Server3: s.vectorClock[2],
+	}
+
+	log.Printf("Reloj vectorial enviado a Jayce: [%d, %d, %d]", s.vectorClock[0], s.vectorClock[1], s.vectorClock[2])
+
+	return &jayceserver_pb.JayceResponse{
+		Cantidad: cantidad,
+		VectorClock: vectorClock,
+	}, nil
 }
 
 func main() {

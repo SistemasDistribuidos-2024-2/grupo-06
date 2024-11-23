@@ -25,7 +25,7 @@ message JayceResponse {
     ResponseStatus status = 1;
 
     // Mensaje opcional en caso de error o redirección
-    string message = 2;
+    optional string message = 2;
 }
 
 // Estado de la respuesta

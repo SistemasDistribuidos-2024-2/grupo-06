@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option go_package = "grpc/jayce-server";
+
+package jayceserver;
+
+service JayceServerService {
+    rpc ObtenerProducto(JayceRequest) returns (JayceResponse);
+}
+
+message JayceRequest {
+
+    string region = 1;
+
+    string product_name = 2;
+
+}
+
+message JayceResponse {
+
+    int32 cantidad = 1;
+
+    VectorClock vector_clock = 2;
+
+}
+
+message VectorClock {
+    int32 server1 = 1;
+    int32 server2 = 2;
+    int32 server3 = 3;
+}

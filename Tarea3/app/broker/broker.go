@@ -12,8 +12,6 @@ import (
 	pb "broker/grpc/jayce-broker" // Importa el paquete generado por el archivo .proto
 	pbsuper "broker/grpc/sup-broker"
 
-	"math/rand"
-
 	"google.golang.org/grpc"
 )
 
@@ -56,7 +54,7 @@ func (b *Broker) ObtenerServidor(ctx context.Context, req *pb.JayceRequest) (*pb
 
 	response := &pb.JayceResponse{
 		Status:  pb.ResponseStatus_OK,
-		Message: server,
+		Message: &server,
 	}
 
 	log.Printf("Redirigiendo al servidor: %s", server)
