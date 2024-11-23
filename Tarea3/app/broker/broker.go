@@ -5,8 +5,12 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	pb "broker/grpc/jayce-broker" // Importa el paquete generado por el archivo .proto
+	pbsuper "broker/grpc/sup-broker"
+
+	"math/rand"
 
 	"google.golang.org/grpc"
 )
@@ -18,6 +22,7 @@ const (
 // **Estructura del Broker**
 type Broker struct {
 	pb.UnimplementedJayceBrokerServiceServer            // Servicio para Jayce
+	pbsuper.UnimplementedBrokerServiceServer
 	servers                                  []string   // Lista de direcciones de los Servidores Hextech
 	serversMu                                sync.Mutex // Mutex para acceso concurrente a la lista de servidores
 }
@@ -57,6 +62,21 @@ func (b *Broker) ObtenerProducto(ctx context.Context, req *pb.JayceRequest) (*pb
 	return response, nil
 }
 
+func (b *Broker) GetServer(ctx context.Context, req *pbsuper.ServerRequest) (*pbsuper.ServerResponse, error){
+	log.Print("Asignando servidor...")
+	direccion := b.selectServerAddress()
+	return &pbsuper.ServerResponse{
+		ServerAddress: direccion,
+	}, nil
+	
+}
+
+func (b *Broker) selectServerAddress() string {
+    rand.Seed(time.Now().UnixNano())
+	num := rand.Intn(3) + 1
+	return b.servers[num-1]
+}
+
 func main() {
 	log.Print("El Servidor Broker está iniciando...")
 
@@ -73,6 +93,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterJayceBrokerServiceServer(grpcServer, broker)
+	pbsuper.RegisterBrokerServiceServer(grpcServer, broker)
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Error al ejecutar el Broker: %v", err)
