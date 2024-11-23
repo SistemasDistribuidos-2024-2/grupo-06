@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"sync"
@@ -39,26 +40,25 @@ func NewBroker() *Broker {
 	return &Broker{servers: servers}
 }
 
-// **ObtenerProducto: Implementación del método gRPC para obtener un producto**
+// --------------------------------------------Jayce------------------------------------------------
+// **ObtenerProducto: Implementación del método gRPC para obtener un producto(Peticion de Jeyce)**
 func (b *Broker) ObtenerProducto(ctx context.Context, req *pb.JayceRequest) (*pb.JayceResponse, error) {
 	log.Printf("Solicitud recibida: Región: %s, Producto: %s", req.Region, req.ProductName)
 
-	// Aquí puedes agregar la lógica para consultar los servidores Hextech y obtener el producto
-	// Por ahora, vamos a simular una respuesta exitosa con un reloj vectorial ficticio
-
-	vectorClock := &pb.VectorClock{
-		Server1: 1,
-		Server2: 2,
-		Server3: 3,
+	// Selecciona un servidor de la lista de servidores
+	b.serversMu.Lock()
+	defer b.serversMu.Unlock()
+	if len(b.servers) == 0 {
+		return nil, fmt.Errorf("no hay servidores disponibles")
 	}
+	server := b.servers[0] // Aquí puedes implementar una lógica de balanceo de carga más avanzada
 
 	response := &pb.JayceResponse{
-		Status:      pb.ResponseStatus_OK,
-		VectorClock: vectorClock,
-		Message:     "Producto encontrado exitosamente",
+		Status:  pb.ResponseStatus_OK,
+		Message: server,
 	}
 
-	log.Printf("Respuesta enviada: %v", response)
+	log.Printf("Redirigiendo al servidor: %s", server)
 	return response, nil
 }
 
