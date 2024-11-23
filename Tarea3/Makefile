@@ -7,6 +7,9 @@ docker-servidor3:
 	@docker-compose -f ./app/docker-compose.yml up hextech3
 
 
+# Comando para iniciar el servicio de jayce
+docker-jayce:
+	@docker-compose -f ./app/docker-compose.yml up jayce
 
 # Comando para iniciar el servicio de Broker
 docker-broker:

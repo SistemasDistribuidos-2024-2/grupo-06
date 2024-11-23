@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"sync"
-	"time"
 
-	supervisor_pb "broker/grpc/sup-broker" // Protobuf para Supervisores
-	servbro_pb "broker/grpc/serv-bro"     // Protobuf para Servidores Hextech
+	pb "broker/grpc/jayce-broker" // Importa el paquete generado por el archivo .proto
+
 	"google.golang.org/grpc"
 )
 
@@ -19,9 +17,9 @@ const (
 
 // **Estructura del Broker**
 type Broker struct {
-	supervisor_pb.UnimplementedBrokerServiceServer // Servicio para Supervisores
-	servers   []string                             // Lista de direcciones de los Servidores Hextech
-	serversMu sync.Mutex                           // Mutex para acceso concurrente a la lista de servidores
+	pb.UnimplementedJayceBrokerServiceServer            // Servicio para Jayce
+	servers                                  []string   // Lista de direcciones de los Servidores Hextech
+	serversMu                                sync.Mutex // Mutex para acceso concurrente a la lista de servidores
 }
 
 // **Crear un nuevo Broker**
@@ -36,86 +34,27 @@ func NewBroker() *Broker {
 	return &Broker{servers: servers}
 }
 
-// **GetRandomServer: Seleccionar servidor aleatorio**
-func (b *Broker) GetRandomServer(ctx context.Context, req *supervisor_pb.ServerRequest) (*supervisor_pb.ServerResponse, error) {
-	serverAddress := b.selectServer()
-	log.Printf("Servidor aleatorio asignado: %s", serverAddress)
+// **ObtenerProducto: Implementación del método gRPC para obtener un producto**
+func (b *Broker) ObtenerProducto(ctx context.Context, req *pb.JayceRequest) (*pb.JayceResponse, error) {
+	log.Printf("Solicitud recibida: Región: %s, Producto: %s", req.Region, req.ProductName)
 
-	return &supervisor_pb.ServerResponse{
-		ServerAddress: serverAddress,
-	}, nil
-}
+	// Aquí puedes agregar la lógica para consultar los servidores Hextech y obtener el producto
+	// Por ahora, vamos a simular una respuesta exitosa con un reloj vectorial ficticio
 
-// **ResolveInconsistency: Elegir servidor más actualizado basado en reloj vectorial**
-func (b *Broker) ResolveInconsistency(ctx context.Context, req *supervisor_pb.InconsistencyRequest) (*supervisor_pb.ServerResponse, error) {
-	b.serversMu.Lock()
-	defer b.serversMu.Unlock()
-
-	var bestServer string
-	var bestClock *supervisor_pb.VectorClock
-
-	// Iterar sobre los servidores y comparar los relojes
-	for _, server := range b.servers {
-		serverClock, err := b.getServerClock(server, req.SupervisorClock)
-		if err != nil {
-			log.Printf("Error al obtener reloj vectorial del servidor %s: %v", server, err)
-			continue
-		}
-
-		// Comparar el reloj del servidor con el mejor encontrado hasta ahora
-		if isNewerVectorClock(serverClock, bestClock) {
-			bestServer = server
-			bestClock = serverClock
-		}
+	vectorClock := &pb.VectorClock{
+		Server1: 1,
+		Server2: 2,
+		Server3: 3,
 	}
 
-	if bestServer == "" {
-		return nil, fmt.Errorf("No se encontró un servidor más actualizado")
+	response := &pb.JayceResponse{
+		Status:      pb.ResponseStatus_OK,
+		VectorClock: vectorClock,
+		Message:     "Producto encontrado exitosamente",
 	}
 
-	log.Printf("Servidor más actualizado encontrado: %s", bestServer)
-	return &supervisor_pb.ServerResponse{
-		ServerAddress: bestServer,
-	}, nil
-}
-
-// **getServerClock: Obtener reloj vectorial de un servidor Hextech**
-func (b *Broker) getServerClock(serverAddress string, clientClock *supervisor_pb.VectorClock) (*supervisor_pb.VectorClock, error) {
-	conn, err := grpc.Dial(serverAddress, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		return nil, fmt.Errorf("No se pudo conectar al servidor %s: %v", serverAddress, err)
-	}
-	defer conn.Close()
-
-	client := servbro_pb.NewHextechServerServiceClient(conn)
-	req := &servbro_pb.ServerRequest{
-		KnownVectorClock: &servbro_pb.VectorClock{
-			Server1: clientClock.Server1,
-			Server2: clientClock.Server2,
-			Server3: clientClock.Server3,
-		},
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	res, err := client.GetVectorClock(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("Error al obtener reloj vectorial del servidor %s: %v", serverAddress, err)
-	}
-
-	return res.VectorClock, nil
-}
-
-// **isNewerVectorClock: Comparar relojes vectoriales**
-func isNewerVectorClock(v1, v2 *supervisor_pb.VectorClock) bool {
-	if v1 == nil {
-		return false
-	}
-	if v2 == nil {
-		return true
-	}
-	return v1.Server1 >= v2.Server1 && v1.Server2 >= v2.Server2 && v1.Server3 >= v2.Server3
+	log.Printf("Respuesta enviada: %v", response)
+	return response, nil
 }
 
 func main() {
@@ -133,7 +72,7 @@ func main() {
 	log.Printf("Broker escuchando en %v\n", brokerPort)
 
 	grpcServer := grpc.NewServer()
-	supervisor_pb.RegisterBrokerServiceServer(grpcServer, broker)
+	pb.RegisterJayceBrokerServiceServer(grpcServer, broker)
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Error al ejecutar el Broker: %v", err)

@@ -13,6 +13,11 @@ services:
       - "50054:50054"
     networks:
       - network_tarea
+  jayce:
+    build: ./jayce
+    container_name: container_jayce
+    networks:
+      - network_tarea
 
   # Servidor Hextech 1
   hextech1:
