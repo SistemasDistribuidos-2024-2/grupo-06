@@ -18,20 +18,20 @@ import (
 )
 
 const (
-	idServer = 1    
-	port = ":5005" + string(rune(idServer)) // Puerto donde escuchará el servidor
+	idServer = 1
+	port     = ":5001" // Puerto donde escuchará el servidor
 )
 
 // HextechServer representa un servidor Hextech
 type HextechServer struct {
-	supserv_pb.UnimplementedHextechServiceServer    // Servicio para Supervisores
-	servbroker_pb.UnimplementedHextechServerServiceServer // Servicio para el Broker
-	serverID       int                              // Identificador único del servidor
-	vectorClock    [3]int32                         // Reloj vectorial del servidor
-	data           map[string]map[string]int32      // Almacén de productos por región
-	logMutex       sync.Mutex                       // Mutex para acceso concurrente al log
-	logs           []string                         // Log para registrar operaciones
-	vectorMutex    sync.Mutex                       // Mutex para acceso concurrente al reloj vectorial
+	supserv_pb.UnimplementedHextechServiceServer                                      // Servicio para Supervisores
+	servbroker_pb.UnimplementedHextechServerServiceServer                             // Servicio para el Broker
+	serverID                                              int                         // Identificador único del servidor
+	vectorClock                                           [3]int32                    // Reloj vectorial del servidor
+	data                                                  map[string]map[string]int32 // Almacén de productos por región
+	logMutex                                              sync.Mutex                  // Mutex para acceso concurrente al log
+	logs                                                  []string                    // Log para registrar operaciones
+	vectorMutex                                           sync.Mutex                  // Mutex para acceso concurrente al reloj vectorial
 }
 
 // **NuevoServidorHextech**: Crea una instancia del servidor Hextech

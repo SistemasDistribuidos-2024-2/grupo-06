@@ -16,7 +16,7 @@ services:
 
   # Servidor Hextech 1
   hextech1:
-    build: ./servidores_hextech
+    build: ./servidores_hextech/servidor_1
     container_name: container_hextech1
     networks:
       - network_tarea
