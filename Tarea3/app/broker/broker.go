@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"sync"
 
@@ -37,7 +38,7 @@ func NewBroker() *Broker {
 
 // --------------------------------------------Jayce------------------------------------------------
 // **ObtenerProducto: Implementación del método gRPC para obtener un producto(Peticion de Jeyce)**
-func (b *Broker) ObtenerProducto(ctx context.Context, req *pb.JayceRequest) (*pb.JayceResponse, error) {
+func (b *Broker) ObtenerServidor(ctx context.Context, req *pb.JayceRequest) (*pb.JayceResponse, error) {
 	log.Printf("Solicitud recibida: Región: %s, Producto: %s", req.Region, req.ProductName)
 
 	// Selecciona un servidor de la lista de servidores
@@ -46,7 +47,7 @@ func (b *Broker) ObtenerProducto(ctx context.Context, req *pb.JayceRequest) (*pb
 	if len(b.servers) == 0 {
 		return nil, fmt.Errorf("no hay servidores disponibles")
 	}
-	server := b.servers[0] // Aquí puedes implementar una lógica de balanceo de carga más avanzada
+	server := b.servers[rand.Intn(len(b.servers))] // Selecciona un servidor aleatorio
 
 	response := &pb.JayceResponse{
 		Status:  pb.ResponseStatus_OK,

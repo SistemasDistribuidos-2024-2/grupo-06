@@ -39,7 +39,7 @@ func NewJayce() *Jayce {
 }
 
 // ObtenerProducto envía una solicitud de consulta al Broker para obtener el puerto del servidor asignado
-func (j *Jayce) ObtenerProducto(region, product string) (*pb.JayceRequest, string, error) {
+func (j *Jayce) ObtenerServidor(region, product string) (*pb.JayceRequest, string, error) {
 	// Crea la solicitud
 	req := &pb.JayceRequest{
 		Region:      region,
@@ -52,7 +52,7 @@ func (j *Jayce) ObtenerProducto(region, product string) (*pb.JayceRequest, strin
 
 	// Envía la solicitud al Broker
 	log.Printf("Enviando solicitud al Broker: Región: %s, Producto: %s", req.Region, req.ProductName)
-	res, err := j.client.ObtenerProducto(ctx, req)
+	res, err := j.client.ObtenerServidor(ctx, req)
 	if err != nil {
 		log.Printf("Error al obtener el producto: %v", err)
 		return req, "", err
@@ -95,21 +95,21 @@ func main() {
 	log.Println("Jayce ha sido inicializado")
 
 	// Ejemplo de consultas realizadas por Jayce
-	req1, puerto1, err1 := jayce.ObtenerProducto("Noxus", "Vino")
+	req1, puerto1, err1 := jayce.ObtenerServidor("Noxus", "Vino")
 	if err1 != nil {
 		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err1)
 	} else {
 		log.Printf("Consulta: Región: %s, Producto: %s, Puerto: %s", req1.Region, req1.ProductName, puerto1)
 	}
 
-	req2, puerto2, err2 := jayce.ObtenerProducto("Demacia", "Espadas")
+	req2, puerto2, err2 := jayce.ObtenerServidor("Demacia", "Espadas")
 	if err2 != nil {
 		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err2)
 	} else {
 		log.Printf("Consulta: Región: %s, Producto: %s, Puerto: %s", req2.Region, req2.ProductName, puerto2)
 	}
 
-	req3, puerto3, err3 := jayce.ObtenerProducto("Piltover", "Cristales Hextech")
+	req3, puerto3, err3 := jayce.ObtenerServidor("Piltover", "Cristales Hextech")
 	if err3 != nil {
 		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err3)
 	} else {

@@ -7,7 +7,7 @@ package jaycebroker;
 // Servicio que define las operaciones entre Jayce y el Broker
 service JayceBrokerService {
     // Método para obtener la información de un producto en una región específica
-    rpc ObtenerProducto(JayceRequest) returns (JayceResponse);
+    rpc ObtenerServidor(JayceRequest) returns (JayceResponse);
 }
 
 // Mensaje de solicitud enviado desde Jayce al Broker

@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	JayceBrokerService_ObtenerProducto_FullMethodName = "/jaycebroker.JayceBrokerService/ObtenerProducto"
+	JayceBrokerService_ObtenerServidor_FullMethodName = "/jaycebroker.JayceBrokerService/ObtenerServidor"
 )
 
 // JayceBrokerServiceClient is the client API for JayceBrokerService service.
@@ -29,7 +29,7 @@ const (
 // Servicio que define las operaciones entre Jayce y el Broker
 type JayceBrokerServiceClient interface {
 	// Método para obtener la información de un producto en una región específica
-	ObtenerProducto(ctx context.Context, in *JayceRequest, opts ...grpc.CallOption) (*JayceResponse, error)
+	ObtenerServidor(ctx context.Context, in *JayceRequest, opts ...grpc.CallOption) (*JayceResponse, error)
 }
 
 type jayceBrokerServiceClient struct {
@@ -40,10 +40,10 @@ func NewJayceBrokerServiceClient(cc grpc.ClientConnInterface) JayceBrokerService
 	return &jayceBrokerServiceClient{cc}
 }
 
-func (c *jayceBrokerServiceClient) ObtenerProducto(ctx context.Context, in *JayceRequest, opts ...grpc.CallOption) (*JayceResponse, error) {
+func (c *jayceBrokerServiceClient) ObtenerServidor(ctx context.Context, in *JayceRequest, opts ...grpc.CallOption) (*JayceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(JayceResponse)
-	err := c.cc.Invoke(ctx, JayceBrokerService_ObtenerProducto_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, JayceBrokerService_ObtenerServidor_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *jayceBrokerServiceClient) ObtenerProducto(ctx context.Context, in *Jayc
 // Servicio que define las operaciones entre Jayce y el Broker
 type JayceBrokerServiceServer interface {
 	// Método para obtener la información de un producto en una región específica
-	ObtenerProducto(context.Context, *JayceRequest) (*JayceResponse, error)
+	ObtenerServidor(context.Context, *JayceRequest) (*JayceResponse, error)
 	mustEmbedUnimplementedJayceBrokerServiceServer()
 }
 
@@ -68,8 +68,8 @@ type JayceBrokerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedJayceBrokerServiceServer struct{}
 
-func (UnimplementedJayceBrokerServiceServer) ObtenerProducto(context.Context, *JayceRequest) (*JayceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ObtenerProducto not implemented")
+func (UnimplementedJayceBrokerServiceServer) ObtenerServidor(context.Context, *JayceRequest) (*JayceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ObtenerServidor not implemented")
 }
 func (UnimplementedJayceBrokerServiceServer) mustEmbedUnimplementedJayceBrokerServiceServer() {}
 func (UnimplementedJayceBrokerServiceServer) testEmbeddedByValue()                            {}
@@ -92,20 +92,20 @@ func RegisterJayceBrokerServiceServer(s grpc.ServiceRegistrar, srv JayceBrokerSe
 	s.RegisterService(&JayceBrokerService_ServiceDesc, srv)
 }
 
-func _JayceBrokerService_ObtenerProducto_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _JayceBrokerService_ObtenerServidor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(JayceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(JayceBrokerServiceServer).ObtenerProducto(ctx, in)
+		return srv.(JayceBrokerServiceServer).ObtenerServidor(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: JayceBrokerService_ObtenerProducto_FullMethodName,
+		FullMethod: JayceBrokerService_ObtenerServidor_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JayceBrokerServiceServer).ObtenerProducto(ctx, req.(*JayceRequest))
+		return srv.(JayceBrokerServiceServer).ObtenerServidor(ctx, req.(*JayceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -118,8 +118,8 @@ var JayceBrokerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*JayceBrokerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ObtenerProducto",
-			Handler:    _JayceBrokerService_ObtenerProducto_Handler,
+			MethodName: "ObtenerServidor",
+			Handler:    _JayceBrokerService_ObtenerServidor_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
