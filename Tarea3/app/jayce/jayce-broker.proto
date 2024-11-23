@@ -24,22 +24,12 @@ message JayceResponse {
     // Estado de la respuesta: OK o ERROR
     ResponseStatus status = 1;
 
-    // Reloj vectorial asociado al registro, usado para Monotonic Reads
-    VectorClock vector_clock = 2;
-
-    // Mensaje opcional en caso de error
-    string message = 3;
+    // Mensaje opcional en caso de error o redirección
+    string message = 2;
 }
 
 // Estado de la respuesta
 enum ResponseStatus {
     OK = 0;
     ERROR = 1;
-}
-
-// Reloj vectorial que representa la versión de los datos en los servidores
-message VectorClock {
-    int32 server1 = 1; // Contador de cambios en Servidor Hextech 1
-    int32 server2 = 2; // Contador de cambios en Servidor Hextech 2
-    int32 server3 = 3; // Contador de cambios en Servidor Hextech 3
 }

@@ -17,24 +17,3 @@ docker-broker:
 # Comando para crear e inciar el servicio de Supervisores
 docker-supervisores:
 	@docker-compose -f ./app/docker-compose.yml up supervisores
-
-
-# Comando para iniciar el servicio de servidores
-start-servidor1:
-    @docker start hextech1
-start-servidor2:
-    @docker start hextech2
-start-servidor3:
-    @docker start hextech3
-
-# Comando para iniciar el servicio de jayce
-start-jayce:
-    @docker start jayce
-
-# Comando para iniciar el servicio de Broker
-start-broker:
-    @docker start broker
-
-# Comando para iniciar el servicio de Supervisores
-start-supervisores:
-    @docker start supervisores
