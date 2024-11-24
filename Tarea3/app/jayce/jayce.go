@@ -128,13 +128,13 @@ func (j *Jayce) ObtenerProducto(region, product string) (error) {
 	defer cancel()
 
 
-	log.Printf("Enviando solicitud al Broker: Región: %s, Producto: %s", req.Region, req.ProductName)
+	log.Printf("Enviando solicitud al Servidor: Región: %s, Producto: %s", req.Region, req.ProductName)
 	res, err := client.ObtenerProducto(ctx, req)
 	if err != nil {
 		log.Printf("Error al obtener el producto: %v", err)
 		return err
 	}
-	log.Printf("Solicitud enviada correctamente al Broker: Región: %s, Producto: %s", req.Region, req.ProductName)
+	log.Printf("Solicitud enviada correctamente al Servidor: Región: %s, Producto: %s", req.Region, req.ProductName)
 
 	cantidad := res.Cantidad
 
