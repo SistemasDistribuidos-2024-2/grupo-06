@@ -53,15 +53,42 @@ func NuevoServidorHextech(id int) *HextechServer {
 //--------------------------------------------------------Consistencias Eventual------------------------------------------------------------------------------
 
 // Función para devolver los logs cuando se soliciten
+// Función para devolver los logs cuando se soliciten
+// Función para devolver los logs cuando se soliciten
 func (s *HextechServer) GetLogs(ctx context.Context, req *hextech_pb.GetLogsRequest) (*hextech_pb.GetLogsResponse, error) {
     s.logMutex.Lock()
     defer s.logMutex.Unlock()
-    return &hextech_pb.GetLogsResponse{Logs: s.logs}, nil
+
+    var allRegionLogs []*hextech_pb.RegionLogs
+
+    for region, vector := range s.vectorClock {
+        var regionLogs []string
+        for i, logEntry := range s.logs {
+            if strings.Contains(logEntry, region) {
+                regionLogs = append(regionLogs, fmt.Sprintf("log%d: %s", i+1, logEntry))
+            }
+        }
+
+        allRegionLogs = append(allRegionLogs, &hextech_pb.RegionLogs{
+            Region: region,
+            Logs:   regionLogs,
+            Vector: &hextech_pb.VectorClock{
+                Server1: vector[0],
+                Server2: vector[1],
+                Server3: vector[2],
+            },
+        })
+    }
+
+    return &hextech_pb.GetLogsResponse{
+        ServerID:   int32(s.serverID),
+        RegionLogs: allRegionLogs,
+    }, nil
 }
 
 // Función para recopilar logs de otros servidores
-func (s *HextechServer) recopilarLogs() [][]string {
-    var logsRecopilados [][]string
+func (s *HextechServer) recopilarLogs() []*hextech_pb.GetLogsResponse {
+    var logsRecopilados []*hextech_pb.GetLogsResponse
     for i := 1; i <= 3; i++ {
         if i == s.serverID {
             continue
@@ -74,14 +101,14 @@ func (s *HextechServer) recopilarLogs() [][]string {
         defer conn.Close()
 
         client := hextech_pb.NewConsistenciaServiceClient(conn)
-        req := &hextech_pb.GetLogsRequest{Region: "all"} // Ajusta según tu implementación
+        req := &hextech_pb.GetLogsRequest{}
         resp, err := client.GetLogs(context.Background(), req)
         if err != nil {
-            log.Printf("Esperando disponibilidad del servidor :%d", i, )
+            log.Printf("Esperando disponibilidad del servidor %d: %v", i, err)
             continue
         }
 
-        logsRecopilados = append(logsRecopilados, resp.Logs)
+        logsRecopilados = append(logsRecopilados, resp)
     }
     return logsRecopilados
 }
@@ -94,14 +121,20 @@ func (s *HextechServer) ejecutarLogicaDominante() {
         logs := s.recopilarLogs()
         s.mergeLogs(logs)
         log.Println("Propagando cambios a otros servidores de parte de Nodo dominante")
-
     }
 }
 
 // Función para realizar el merge de los logs
-func (s *HextechServer) mergeLogs(logs [][]string) {
+func (s *HextechServer) mergeLogs(logs []*hextech_pb.GetLogsResponse) {
     // Implementar lógica de merge aquí
-    // Actualizar data y vectorClock
+    for _, logResponse := range logs {
+        log.Printf("Servidor: %d", logResponse.ServerID)
+        for _, regionLog := range logResponse.RegionLogs {
+            // Procesar cada regionLog
+            log.Printf("Región: %s, Logs: %v, Vector: {Server1: %d, Server2: %d, Server3: %d}", 
+                regionLog.Region, regionLog.Logs, regionLog.Vector.Server1, regionLog.Vector.Server2, regionLog.Vector.Server3)
+        }
+    }
 }
 
 //---------------------------------------------------------Fin consistencias Eventual------------------------------------------------------------------------------
@@ -134,11 +167,9 @@ func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado st
 	}
 }
 func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.SupervisorRequest) (*supserv_pb.ServerResponse, error) {
-    log.Println("HandleRequest: Locking vectorMutex")
     s.vectorMutex.Lock()
     defer s.vectorMutex.Unlock()
 
-    log.Println("HandleRequest: Checking context deadline")
     select {
     case <-ctx.Done():
         errorMessage := "Context deadline exceeded"

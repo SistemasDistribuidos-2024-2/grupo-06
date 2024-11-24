@@ -9,9 +9,21 @@ service ConsistenciaService {
 }
 
 message GetLogsRequest {
-  string region = 1;
 }
 
 message GetLogsResponse {
-  repeated string logs = 1;
+  int32 serverID = 1;
+  repeated RegionLogs regionLogs = 2;
+}
+
+message RegionLogs {
+  string region = 1;
+  map<string, string> logs = 2;
+  VectorClock vector = 3;
+}
+
+message VectorClock {
+  int32 server1 = 1;
+  int32 server2 = 2;
+  int32 server3 = 3;
 }
