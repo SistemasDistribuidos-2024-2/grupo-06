@@ -30,6 +30,7 @@ services:
       - SERVER_ID=1
     volumes:
       - ./logs/hextech1:/app/logs
+      - ./mercancias/hextech1:/app/mercancias
 
   # Servidor Hextech 2
   hextech2:
@@ -43,6 +44,7 @@ services:
       - SERVER_ID=2
     volumes:
       - ./logs/hextech2:/app/logs
+      - ./mercancias/hextech2:/app/mercancias
 
   # Servidor Hextech 3
   hextech3:
@@ -56,6 +58,7 @@ services:
       - SERVER_ID=3
     volumes:
       - ./logs/hextech3:/app/logs
+      - ./mercancias/hextech3:/app/mercancias
 
 # Red EXTERNA que se crea mediante docker
 networks:

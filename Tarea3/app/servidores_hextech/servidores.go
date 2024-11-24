@@ -168,8 +168,8 @@ func (s *HextechServer) BorrarProducto(region, product string) {
 
 // **Funciones para archivos**
 func escribirArchivo(region string, productos map[string]int32) {
-	fileName := fmt.Sprintf("%s.txt", region)
-	file, err := os.Create(fileName)
+    fileName := fmt.Sprintf("/app/mercancias/%s.txt", region)
+    file, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Fatalf("Error al crear archivo %s: %v", fileName, err)
 	}
@@ -184,34 +184,35 @@ func escribirArchivo(region string, productos map[string]int32) {
 }
 
 func leerArchivo(region string) map[string]int32 {
-	fileName := fmt.Sprintf("%s.txt", region)
-	productos := make(map[string]int32)
+    fileName := fmt.Sprintf("/app/mercancias/%s.txt", region)
+    productos := make(map[string]int32)
 
-	file, err := os.Open(fileName)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return productos // Archivo no existe aún
-		}
-		log.Fatalf("Error al leer archivo %s: %v", fileName, err)
-	}
-	defer file.Close()
+    file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0644)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return productos
+    }
+    defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		linea := scanner.Text()
-		partes := strings.Split(linea, " ")
-		if len(partes) != 3 {
-			continue
-		}
-		producto := partes[1]
-		cantidad, err := strconv.Atoi(partes[2])
-		if err != nil {
-			log.Printf("Error al parsear cantidad en archivo %s: %v", fileName, err)
-			continue
-		}
-		productos[producto] = int32(cantidad)
-	}
-	return productos
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        linea := scanner.Text()
+        partes := strings.Split(linea, " ")
+        if len(partes) != 3 {
+            continue
+        }
+        cantidad, err := strconv.Atoi(partes[2])
+        if err != nil {
+            continue
+        }
+        productos[partes[1]] = int32(cantidad)
+    }
+
+    if err := scanner.Err(); err != nil {
+        fmt.Println("Error al leer el archivo:", err)
+    }
+
+    return productos
 }
 
 func (s *HextechServer) mergeLogs(logs [][]string) {
