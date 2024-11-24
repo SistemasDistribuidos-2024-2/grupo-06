@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pb "jayce/grpc/jayce-broker" // Importa el paquete generado por el archivo .proto
+	pbserver "jayce/grpc/jayce-server"
 
 	"google.golang.org/grpc"
 )
@@ -17,12 +18,13 @@ const (
 
 type Jayce struct {
 	client    pb.JayceBrokerServiceClient
+	clientServer pbserver.JayceServerServiceClient
 	consultas []Consulta // Almacena las consultas realizadas
 }
 
 type Consulta struct {
-	Solicitud *pb.JayceRequest
-	Respuesta *pb.JayceResponse
+	Solicitud *pbserver.JayceRequest
+	Respuesta *pbserver.JayceResponse
 	Error     error
 }
 
@@ -61,25 +63,56 @@ func (j *Jayce) ObtenerServidor(region, product string) (*pb.JayceRequest, strin
 
 	// Verifica el estado de la respuesta
 	if res.Status == pb.ResponseStatus_ERROR {
-		log.Printf("Error en la consulta: %s", res.Message)
-		return req, "", fmt.Errorf("error en la consulta: %s", res.Message)
+		log.Print("Error en la consulta")
+		return req, "", fmt.Errorf("error en la consulta")
+	}
+	// Extrae el puerto del mensaje de respuesta
+	puerto := ""
+	if res.Message != nil {
+		puerto = *(res.Message)
 	}
 
 	// Log de la respuesta del Broker
-	log.Printf("Respuesta del Broker: Status: %v, Message: %s", res.Status, res.Message)
+	log.Printf("Respuesta del Broker: Status: %v, Message: %s", res.Status, puerto)
 
 	// Imprime los datos de la respuesta
 	fmt.Printf("Producto consultado: %s en %s\n", product, region)
-	fmt.Printf("Mensaje del Broker: %s\n", res.Message)
+	fmt.Printf("Mensaje del Broker: %s\n", puerto)
 
-	// Extrae el puerto del mensaje de respuesta
-	puerto := res.Message
 
 	return req, puerto, nil
 }
 
+func (j *Jayce) ObtenerProducto(region, product string) (error) {
+	req := &pbserver.JayceRequest{
+		Region: region,
+		ProductName: product,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	log.Printf("Enviando solicitud al Broker: Región: %s, Producto: %s", req.Region, req.ProductName)
+	res, err := j.clientServer.ObtenerProducto(ctx, req)
+	if err != nil {
+		log.Printf("Error al obtener el producto: %v", err)
+		return err
+	}
+	log.Printf("Solicitud enviada correctamente al Broker: Región: %s, Producto: %s", req.Region, req.ProductName)
+
+	cantidad := res.Cantidad
+
+	vectorClock := res.VectorClock
+
+	log.Printf("Respuesta del Servidor: Cantidad: %v, Reloj de Vectores: %s", cantidad, vectorClock)
+
+	j.AlmacenarConsulta(req, res, err)
+
+	return err
+}
+
 // AlmacenarConsulta guarda la solicitud y la respuesta en la memoria si no hay error
-func (j *Jayce) AlmacenarConsulta(req *pb.JayceRequest, res *pb.JayceResponse, err error) {
+func (j *Jayce) AlmacenarConsulta(req *pbserver.JayceRequest, res *pbserver.JayceResponse, err error) {
 	if err == nil {
 		j.consultas = append(j.consultas, Consulta{Solicitud: req, Respuesta: res, Error: err})
 		log.Printf("Consulta agregada correctamente: Región: %s, Producto: %s", req.Region, req.ProductName)
