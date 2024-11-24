@@ -53,8 +53,6 @@ func NuevoServidorHextech(id int) *HextechServer {
 //--------------------------------------------------------Consistencias Eventual------------------------------------------------------------------------------
 
 // Función para devolver los logs cuando se soliciten
-// Función para devolver los logs cuando se soliciten
-// Función para devolver los logs cuando se soliciten
 func (s *HextechServer) GetLogs(ctx context.Context, req *hextech_pb.GetLogsRequest) (*hextech_pb.GetLogsResponse, error) {
     s.logMutex.Lock()
     defer s.logMutex.Unlock()
@@ -62,10 +60,10 @@ func (s *HextechServer) GetLogs(ctx context.Context, req *hextech_pb.GetLogsRequ
     var allRegionLogs []*hextech_pb.RegionLogs
 
     for region, vector := range s.vectorClock {
-        var regionLogs []string
+        regionLogs := make(map[string]string)
         for i, logEntry := range s.logs {
             if strings.Contains(logEntry, region) {
-                regionLogs = append(regionLogs, fmt.Sprintf("log%d: %s", i+1, logEntry))
+                regionLogs[fmt.Sprintf("log%d", i+1)] = logEntry
             }
         }
 
@@ -131,12 +129,15 @@ func (s *HextechServer) mergeLogs(logs []*hextech_pb.GetLogsResponse) {
         log.Printf("Servidor: %d", logResponse.ServerID)
         for _, regionLog := range logResponse.RegionLogs {
             // Procesar cada regionLog
-            log.Printf("Región: %s, Logs: %v, Vector: {Server1: %d, Server2: %d, Server3: %d}", 
-                regionLog.Region, regionLog.Logs, regionLog.Vector.Server1, regionLog.Vector.Server2, regionLog.Vector.Server3)
+            log.Printf("Región: %s, Vector: {Server1: %d, Server2: %d, Server3: %d}", 
+                regionLog.Region, regionLog.Vector.Server1, regionLog.Vector.Server2, regionLog.Vector.Server3)
+            
+            for logKey, logValue := range regionLog.Logs {
+                log.Printf("%s: %s", logKey, logValue)
+            }
         }
     }
 }
-
 //---------------------------------------------------------Fin consistencias Eventual------------------------------------------------------------------------------
 
 
