@@ -28,7 +28,7 @@ type HextechServer struct {
 	servbroker_pb.UnimplementedHextechServerServiceServer // Servicio para el Broker
 	jayceserver_pb.UnimplementedJayceServerServiceServer
 	serverID       int                              // Identificador único del servidor
-	vectorClock    [3]int32                         // Reloj vectorial del servidor
+    vectorClock    map[string][3]int32    // Mapeo región -> reloj vectorial
 	data           map[string]map[string]int32      // Almacén de productos por región
 	logMutex       sync.Mutex                       // Mutex para acceso concurrente al log
 	logs           []string                         // Log para registrar operaciones
@@ -39,10 +39,34 @@ type HextechServer struct {
 func NuevoServidorHextech(id int) *HextechServer {
 	return &HextechServer{
 		serverID:    id,
-		vectorClock: [3]int32{0, 0, 0},
+        vectorClock: make(map[string][3]int32), // Inicializa el mapeo
 		data:        make(map[string]map[string]int32),
 	}
 }
+
+func (s *HextechServer) IncrementarReloj(region string) {
+	s.vectorMutex.Lock()
+	defer s.vectorMutex.Unlock()
+	
+	// Obtiene el reloj vectorial de la región especificada
+	reloj := s.vectorClock[region]
+	
+	// Incrementa la dimensión correspondiente al servidor actual
+	reloj[s.serverID-1]++
+	
+	// Asigna el reloj vectorial modificado de nuevo al mapa
+	s.vectorClock[region] = reloj
+}
+
+func (s *HextechServer) ObtenerReloj(region string) [3]int32 {
+    s.vectorMutex.Lock()
+    defer s.vectorMutex.Unlock()
+
+    // Devuelve el reloj vectorial de la región
+    return s.vectorClock[region]
+}
+
+
 //Log de Registro
 func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string, nuevoValor int32) {
     // Formatear el mensaje del log
@@ -94,18 +118,20 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
         }, nil
     }
 
-    // Incrementa el reloj vectorial del servidor actual
-    s.vectorClock[s.serverID-1]++
+	s.IncrementarReloj(region) // Incrementa el reloj de la región
+	reloj := s.ObtenerReloj(region)
+	fmt.Printf("Reloj vectorial de %s: [%d, %d, %d]\n", region, reloj[0], reloj[1], reloj[2])
+
 
     // Llama a la función registrarLog
     s.registrarLog(req.OperationType.String(), region, product, *req.Value)
 
-    // Prepara el reloj vectorial para la respuesta
-    vectorClock := &supserv_pb.VectorClock{
-        Server1: s.vectorClock[0],
-        Server2: s.vectorClock[1],
-        Server3: s.vectorClock[2],
-    }
+	// Prepara el reloj vectorial para la respuesta
+	vectorClock := &supserv_pb.VectorClock{
+		Server1: reloj[0],
+		Server2: reloj[1],
+		Server3: reloj[2],
+	}
 
     return &supserv_pb.ServerResponse{
         Status:      supserv_pb.ResponseStatus_OK,
@@ -117,14 +143,15 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 func (s *HextechServer) GetVectorClock(ctx context.Context, req *servbroker_pb.ServerRequest) (*servbroker_pb.ServerResponse, error) {
 	s.vectorMutex.Lock()
 	defer s.vectorMutex.Unlock()
-
+	region := req.Region
+	reloj := s.ObtenerReloj(region)
 	vectorClock := &servbroker_pb.VectorClock{
-		Server1: s.vectorClock[0],
-		Server2: s.vectorClock[1],
-		Server3: s.vectorClock[2],
+		Server1: reloj[0],
+		Server2: reloj[1],
+		Server3: reloj[2],
 	}
 
-	log.Printf("Reloj vectorial enviado al Broker: [%d, %d, %d]", s.vectorClock[0], s.vectorClock[1], s.vectorClock[2])
+	log.Printf("Reloj vectorial enviado al Broker: [%d, %d, %d]", reloj[0], reloj[1], reloj[2])
 
 	return &servbroker_pb.ServerResponse{
 		ServerClock: vectorClock,
@@ -249,14 +276,15 @@ func (s *HextechServer) ObtenerProducto(ctx context.Context, req *jayceserver_pb
 
 	s.vectorMutex.Lock()
 	defer s.vectorMutex.Unlock()
-
+	region := req.Region
+	reloj := s.ObtenerReloj(region)
 	vectorClock := &jayceserver_pb.VectorClock{
-		Server1: s.vectorClock[0],
-		Server2: s.vectorClock[1],
-		Server3: s.vectorClock[2],
+		Server1: reloj[0],
+		Server2: reloj[1],
+		Server3: reloj[2],
 	}
 
-	log.Printf("Reloj vectorial enviado a Jayce: [%d, %d, %d]", s.vectorClock[0], s.vectorClock[1], s.vectorClock[2])
+	log.Printf("Reloj vectorial enviado a Jayce: [%d, %d, %d]",  reloj[0], reloj[1], reloj[2])
 
 	return &jayceserver_pb.JayceResponse{
 		Cantidad: cantidad,
@@ -289,6 +317,7 @@ func main() {
 	go server.RunServer(port)
 
 	if idServer == DominantNodeID {
+
         // Lógica para el nodo dominante
         // Recopilar logs de otros servidores y realizar merge
     }
