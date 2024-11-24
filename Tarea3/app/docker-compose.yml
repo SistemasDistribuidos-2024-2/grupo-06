@@ -19,6 +19,8 @@ services:
     container_name: container_jayce
     networks:
       - network_tarea
+    stdin_open: true
+    tty: true
 
   # Servidor Hextech 1
   hextech1:

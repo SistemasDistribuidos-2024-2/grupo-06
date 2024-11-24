@@ -8,7 +8,7 @@ docker-servidor3:
 
 # Comando para crear e inciar  el servicio de jayce
 docker-jayce:
-	@docker-compose -f ./app/docker-compose.yml up jayce
+	@docker-compose -f ./app/docker-compose.yml run jayce
 
 # Comando para crear e inciar el servicio de Broker
 docker-broker:
