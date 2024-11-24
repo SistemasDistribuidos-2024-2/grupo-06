@@ -18,10 +18,13 @@ import (
 	"google.golang.org/grpc"
 )
 
+<<<<<<< Updated upstream
 
 const DominantNodeID = 1 // Nodo dominante Definido de manera estática
 
 
+=======
+>>>>>>> Stashed changes
 // HextechServer representa un servidor Hextech
 type HextechServer struct {
 	supserv_pb.UnimplementedHextechServiceServer    // Servicio para Supervisores
@@ -44,9 +47,9 @@ func NuevoServidorHextech(id int) *HextechServer {
 	}
 }
 //Log de Registro
-func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string, nuevoValor int32) {
+func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string) {
     // Formatear el mensaje del log
-    message := fmt.Sprintf("%s %s %s %d", accion, regionAfectada, productoAfectado, nuevoValor)
+    message := fmt.Sprintf("%s %s %s", accion, regionAfectada, productoAfectado)
 
     // Guardar la operación en el log
     s.logMutex.Lock()
@@ -98,7 +101,7 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
     s.vectorClock[s.serverID-1]++
 
     // Llama a la función registrarLog
-    s.registrarLog(req.OperationType.String(), region, product, *req.Value)
+    s.registrarLog(req.OperationType.String(), region, product)
 
     // Prepara el reloj vectorial para la respuesta
     vectorClock := &supserv_pb.VectorClock{
