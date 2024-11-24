@@ -44,29 +44,6 @@ func NuevoServidorHextech(id int) *HextechServer {
 	}
 }
 
-func (s *HextechServer) IncrementarReloj(region string) {
-	s.vectorMutex.Lock()
-	defer s.vectorMutex.Unlock()
-	
-	// Obtiene el reloj vectorial de la región especificada
-	reloj := s.vectorClock[region]
-	
-	// Incrementa la dimensión correspondiente al servidor actual
-	reloj[s.serverID-1]++
-	
-	// Asigna el reloj vectorial modificado de nuevo al mapa
-	s.vectorClock[region] = reloj
-}
-
-func (s *HextechServer) ObtenerReloj(region string) [3]int32 {
-    s.vectorMutex.Lock()
-    defer s.vectorMutex.Unlock()
-
-    // Devuelve el reloj vectorial de la región
-    return s.vectorClock[region]
-}
-
-
 //Log de Registro
 func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string) {
     // Formatear el mensaje del log
@@ -91,60 +68,90 @@ func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado st
 		fmt.Println("Log escrito correctamente en el archivo de logs")
 	}
 }
-
-// **HandleRequest**: Manejo de solicitudes desde Supervisores
 func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.SupervisorRequest) (*supserv_pb.ServerResponse, error) {
+    log.Println("HandleRequest: Locking vectorMutex")
     s.vectorMutex.Lock()
     defer s.vectorMutex.Unlock()
 
+    log.Println("HandleRequest: Checking context deadline")
+    select {
+    case <-ctx.Done():
+        errorMessage := "Context deadline exceeded"
+        log.Println("HandleRequest: Context deadline exceeded")
+        return &supserv_pb.ServerResponse{
+            Status:  supserv_pb.ResponseStatus_ERROR,
+            Message: &errorMessage,
+        }, ctx.Err()
+    default:
+        // Continue processing
+    }
+
     region := req.Region
     product := req.ProductName
+    log.Printf("HandleRequest: Processing operation %s for region %s and product %s", req.OperationType.String(), region, product)
 
     // Procesar la operación
     switch req.OperationType {
     case supserv_pb.OperationType_AGREGAR:
+        log.Println("HandleRequest: Adding product")
         s.AgregarProducto(region, product, *req.Value)
     case supserv_pb.OperationType_RENOMBRAR:
+        log.Println("HandleRequest: Renaming product")
         s.RenombrarProducto(region, product, *req.NewProductName)
     case supserv_pb.OperationType_ACTUALIZAR:
+        log.Println("HandleRequest: Updating product value")
         s.ActualizarValor(region, product, *req.Value)
     case supserv_pb.OperationType_BORRAR:
+        log.Println("HandleRequest: Deleting product")
         s.BorrarProducto(region, product)
     default:
         errorMessage := "Operación no reconocida"
+        log.Println("HandleRequest: Unrecognized operation")
         return &supserv_pb.ServerResponse{
             Status:  supserv_pb.ResponseStatus_ERROR,
             Message: &errorMessage,
         }, nil
     }
 
-	s.IncrementarReloj(region) // Incrementa el reloj de la región
-	reloj := s.ObtenerReloj(region)
-	fmt.Printf("Reloj vectorial de %s: [%d, %d, %d]\n", region, reloj[0], reloj[1], reloj[2])
+
+
+//Incrementar Reloj------------------------------------------------------------------
+	reloj := s.vectorClock[region]
+    
+    // Incrementa la dimensión correspondiente al servidor actual
+    reloj[s.serverID-1]++
+    
+    // Asigna el reloj vectorial modificado de nuevo al mapa
+    s.vectorClock[region] = reloj
+
+    log.Printf("Nuevo valor de vector para la siguiente region %s: [%d, %d, %d]", region, reloj[0], reloj[1], reloj[2])
+
+//-----------------------------------------------------------------------------------------------------
 
 
     // Llama a la función registrarLog
+    log.Println("HandleRequest: Registering log")
     s.registrarLog(req.OperationType.String(), region, product)
 
-	// Prepara el reloj vectorial para la respuesta
-	vectorClock := &supserv_pb.VectorClock{
-		Server1: reloj[0],
-		Server2: reloj[1],
-		Server3: reloj[2],
-	}
+    // Prepara el reloj vectorial para la respuesta
+    vectorClock := &supserv_pb.VectorClock{
+        Server1: reloj[0],
+        Server2: reloj[1],
+        Server3: reloj[2],
+    }
 
+    log.Println("HandleRequest: Returning response")
     return &supserv_pb.ServerResponse{
         Status:      supserv_pb.ResponseStatus_OK,
         VectorClock: vectorClock,
     }, nil
 }
-
 // **GetVectorClock**: Método para devolver el reloj vectorial al Broker
 func (s *HextechServer) GetVectorClock(ctx context.Context, req *servbroker_pb.ServerRequest) (*servbroker_pb.ServerResponse, error) {
 	s.vectorMutex.Lock()
 	defer s.vectorMutex.Unlock()
 	region := req.Region
-	reloj := s.ObtenerReloj(region)
+	reloj := s.vectorClock[region]
 	vectorClock := &servbroker_pb.VectorClock{
 		Server1: reloj[0],
 		Server2: reloj[1],
@@ -277,7 +284,7 @@ func (s *HextechServer) ObtenerProducto(ctx context.Context, req *jayceserver_pb
 	s.vectorMutex.Lock()
 	defer s.vectorMutex.Unlock()
 	region := req.Region
-	reloj := s.ObtenerReloj(region)
+	reloj := s.vectorClock[region]
 	vectorClock := &jayceserver_pb.VectorClock{
 		Server1: reloj[0],
 		Server2: reloj[1],
