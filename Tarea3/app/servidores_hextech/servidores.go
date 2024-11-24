@@ -102,7 +102,7 @@ func (s *HextechServer) recopilarLogs() []*hextech_pb.GetLogsResponse {
         req := &hextech_pb.GetLogsRequest{}
         resp, err := client.GetLogs(context.Background(), req)
         if err != nil {
-            log.Printf("Esperando disponibilidad del servidor %d: %v", i, err)
+            log.Printf("Esperando disponibilidad del servidor %d: ", i)
             continue
         }
 
@@ -126,7 +126,7 @@ func (s *HextechServer) ejecutarLogicaDominante() {
 func (s *HextechServer) mergeLogs(logs []*hextech_pb.GetLogsResponse) {
     // Implementar lógica de merge aquí
     for _, logResponse := range logs {
-        log.Printf("Servidor: %d", logResponse.ServerID)
+        log.Printf("-------------------------------------------------------Aplicando cambios en el Servidor: %d", logResponse.ServerID)
         for _, regionLog := range logResponse.RegionLogs {
             // Procesar cada regionLog
             log.Printf("Región: %s, Vector: {Server1: %d, Server2: %d, Server3: %d}", 
@@ -134,9 +134,116 @@ func (s *HextechServer) mergeLogs(logs []*hextech_pb.GetLogsResponse) {
             
             for logKey, logValue := range regionLog.Logs {
                 log.Printf("%s: %s", logKey, logValue)
+                // Aplicar cambios en el archivo del nodo dominante
+                s.applyChange(logKey, logValue)
             }
         }
     }
+
+    // Actualizar los relojes de vectores
+    s.updateVectorClocks(logs)
+}
+
+// Función para aplicar cambios en el archivo del nodo dominante
+func (s *HextechServer) applyChange(logKey, logValue string) {
+    // Implementar lógica para aplicar cambios en el archivo
+    log.Printf("Aplicando cambio: %s -> %s", logKey, logValue)
+}
+
+// Función para actualizar los relojes de vectores
+func (s *HextechServer) updateVectorClocks(logs []*hextech_pb.GetLogsResponse) {
+    for _, logResponse := range logs {
+        for _, regionLog := range logResponse.RegionLogs {
+            // Obtener el vector actual
+            currentVector := s.vectorClock[regionLog.Region]
+
+            // Actualizar el vector del nodo dominante
+            updatedVector := [3]int32{
+                int32(max(int(currentVector[0]), int(regionLog.Vector.Server1))),
+                int32(max(int(currentVector[1]), int(regionLog.Vector.Server2))),
+                int32(max(int(currentVector[2]), int(regionLog.Vector.Server3))),
+            }
+
+            // Asignar el vector actualizado
+            s.vectorClock[regionLog.Region] = updatedVector
+
+            // Mostrar el nuevo vector actualizado
+            log.Printf("Región: %s, Nuevo Vector: {Server1: %d, Server2: %d, Server3: %d}", 
+                regionLog.Region, updatedVector[0], updatedVector[1], updatedVector[2])
+        }
+    }
+
+    // Propagar los cambios a otros servidores
+    s.propagateChanges()
+}
+
+    // Propagar los cambios a otros servidores
+    
+// Función para propagar los cambios a otros servidores
+func (s *HextechServer) propagateChanges() {
+    for i := 1; i <= 3; i++ {
+        if i == s.serverID {
+            continue
+        }
+        conn, err := grpc.Dial(fmt.Sprintf("container_hextech%d:5005%d", i, i), grpc.WithInsecure())
+        if err != nil {
+            log.Printf("Error al conectar con el servidor %d: %v", i, err)
+            continue
+        }
+        defer conn.Close()
+
+        client := hextech_pb.NewConsistenciaServiceClient(conn)
+
+        // Crear un mapa de vectores por región
+        vectorClocks := make(map[string]*hextech_pb.VectorClock)
+        for region, vector := range s.vectorClock {
+            vectorClocks[region] = &hextech_pb.VectorClock{
+                Server1: vector[0],
+                Server2: vector[1],
+                Server3: vector[2],
+            }
+            log.Printf("Propagando cambios al servidor %d para la región %s: Nuevo Vector: {Server1: %d, Server2: %d, Server3: %d}", 
+                i, region, vector[0], vector[1], vector[2])
+        }
+
+        req := &hextech_pb.UpdateRequest{
+            ServerID:     int32(s.serverID),
+            VectorClocks: vectorClocks,
+        }
+        _, err = client.Update(context.Background(), req)
+        if err != nil {
+            log.Printf("Error al propagar cambios al servidor %d: %v", i, err)
+        }
+    }
+}
+
+// Función para actualizar los vectores en las réplicas
+func (s *HextechServer) Update(ctx context.Context, req *hextech_pb.UpdateRequest) (*hextech_pb.UpdateResponse, error) {
+    s.vectorMutex.Lock()
+    defer s.vectorMutex.Unlock()
+
+    // Actualizar el vector del servidor para todas las regiones
+    for region, vector := range req.VectorClocks {
+        s.vectorClock[region] = [3]int32{
+            vector.Server1,
+            vector.Server2,
+            vector.Server3,
+        }
+
+        log.Printf("Vector actualizado para la región %s en esta replica ,Servidor ----> %d: Nuevo Vector: {Server1: %d, Server2: %d, Server3: %d}", 
+            region, s.serverID, vector.Server1, vector.Server2, vector.Server3)
+    }
+
+    return &hextech_pb.UpdateResponse{}, nil
+}
+
+
+// Función auxiliar para obtener el máximo de dos enteros
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
 }
 //---------------------------------------------------------Fin consistencias Eventual------------------------------------------------------------------------------
 

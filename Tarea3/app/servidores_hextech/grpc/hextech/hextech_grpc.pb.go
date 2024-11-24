@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ConsistenciaService_GetLogs_FullMethodName = "/hextech.ConsistenciaService/GetLogs"
+	ConsistenciaService_Update_FullMethodName  = "/hextech.ConsistenciaService/Update"
 )
 
 // ConsistenciaServiceClient is the client API for ConsistenciaService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConsistenciaServiceClient interface {
 	GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error)
+	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 }
 
 type consistenciaServiceClient struct {
@@ -47,11 +49,22 @@ func (c *consistenciaServiceClient) GetLogs(ctx context.Context, in *GetLogsRequ
 	return out, nil
 }
 
+func (c *consistenciaServiceClient) Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateResponse)
+	err := c.cc.Invoke(ctx, ConsistenciaService_Update_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConsistenciaServiceServer is the server API for ConsistenciaService service.
 // All implementations must embed UnimplementedConsistenciaServiceServer
 // for forward compatibility.
 type ConsistenciaServiceServer interface {
 	GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error)
+	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	mustEmbedUnimplementedConsistenciaServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedConsistenciaServiceServer struct{}
 
 func (UnimplementedConsistenciaServiceServer) GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
+}
+func (UnimplementedConsistenciaServiceServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedConsistenciaServiceServer) mustEmbedUnimplementedConsistenciaServiceServer() {}
 func (UnimplementedConsistenciaServiceServer) testEmbeddedByValue()                             {}
@@ -104,6 +120,24 @@ func _ConsistenciaService_GetLogs_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConsistenciaService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsistenciaServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsistenciaService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsistenciaServiceServer).Update(ctx, req.(*UpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConsistenciaService_ServiceDesc is the grpc.ServiceDesc for ConsistenciaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var ConsistenciaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetLogs",
 			Handler:    _ConsistenciaService_GetLogs_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _ConsistenciaService_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -6,6 +6,7 @@ package hextech;
 
 service ConsistenciaService {
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
 }
 
 message GetLogsRequest {
@@ -14,6 +15,14 @@ message GetLogsRequest {
 message GetLogsResponse {
   int32 serverID = 1;
   repeated RegionLogs regionLogs = 2;
+}
+
+message UpdateRequest {
+  int32 serverID = 1;
+  map<string, VectorClock> vectorClocks = 2;
+}
+
+message UpdateResponse {
 }
 
 message RegionLogs {
