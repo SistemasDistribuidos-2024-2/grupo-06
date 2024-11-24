@@ -89,11 +89,21 @@ func (j *Jayce) ObtenerProducto(region, product string) (error) {
 		ProductName: product,
 	}
 
+	_, direccion, err := j.ObtenerServidor(region, product)
+
+	conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("No se pudo conectar al Servidor Hextech: %v", err)
+	}
+	defer conn.Close()
+
+	client := pbserver.NewJayceServerServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
+
 	log.Printf("Enviando solicitud al Broker: Región: %s, Producto: %s", req.Region, req.ProductName)
-	res, err := j.clientServer.ObtenerProducto(ctx, req)
+	res, err := client.ObtenerProducto(ctx, req)
 	if err != nil {
 		log.Printf("Error al obtener el producto: %v", err)
 		return err
