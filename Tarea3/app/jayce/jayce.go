@@ -165,25 +165,25 @@ func main() {
 	log.Println("Jayce ha sido inicializado")
 
 	// Ejemplo de consultas realizadas por Jayce
-	req1, puerto1, err1 := jayce.ObtenerServidor("Noxus", "Vino")
+	err1 := jayce.ObtenerProducto("Noxus", "Vino")
 	if err1 != nil {
 		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err1)
 	} else {
-		log.Printf("Consulta: Región: %s, Producto: %s, Puerto: %s", req1.Region, req1.ProductName, puerto1)
+		log.Printf("Consulta exitosa")
 	}
-
-	req2, puerto2, err2 := jayce.ObtenerServidor("Demacia", "Espadas")
+	err2 := jayce.ObtenerProducto("a", "A")
+	//err2 := jayce.ObtenerProducto("Demacia", "Espadas")
 	if err2 != nil {
 		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err2)
 	} else {
-		log.Printf("Consulta: Región: %s, Producto: %s, Puerto: %s", req2.Region, req2.ProductName, puerto2)
+		log.Printf("Consulta exitosa")
 	}
-
-	req3, puerto3, err3 := jayce.ObtenerServidor("Piltover", "Cristales Hextech")
+	err3 := jayce.ObtenerProducto("b", "B")
+	//err3 := jayce.ObtenerProducto("Piltover", "Cristales Hextech")
 	if err3 != nil {
 		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err3)
 	} else {
-		log.Printf("Consulta: Región: %s, Producto: %s, Puerto: %s", req3.Region, req3.ProductName, puerto3)
+		log.Printf("Consulta exitosa")
 	}
 	// Imprime las consultas almacenadas
 	for _, consulta := range jayce.consultas {

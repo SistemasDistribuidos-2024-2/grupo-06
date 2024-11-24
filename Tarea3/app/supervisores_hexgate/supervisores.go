@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	pb "supervisores_hexgate/grpc/sup-broker"  // Proto para comunicarse con el Broker
@@ -292,6 +296,102 @@ func (s *Supervisor) BorrarProducto(region, producto string) {
 	//}
 }
 
+func menu(s *Supervisor){
+	scanner := bufio.NewScanner(os.Stdin)
+	for {
+
+		log.Print("Opciones disponibles:")
+		log.Print("1) Agregar Producto")
+		log.Print("2) Renombrar Producto")
+		log.Print("3) Actualizar Valor de Producto")
+		log.Print("4) Eliminar Producto")
+		log.Print("5) Salir")
+		log.Print("Seleccione acción: ")
+		time.Sleep(time.Second * 10)
+		scanner.Scan()
+		entrada := strings.TrimSpace(scanner.Text())
+
+		opcion, err := strconv.Atoi(entrada)
+		if err != nil {
+			log.Print("Por favor ingrese un número válido")
+		}
+
+		switch opcion{
+		case 1:
+			scanner1 := bufio.NewScanner(os.Stdin)
+			log.Print("Opcion Agregar Producto")
+			log.Print("Ingrese la región a enviar: ")
+			scanner1.Scan()
+			region := strings.TrimSpace(scanner1.Text())
+			log.Print("Ingrese el producto a enviar: ")
+			scanner1.Scan()
+			producto := strings.TrimSpace(scanner1.Text())
+			log.Print("Ingrese el valor del producto: ")
+			scanner1.Scan()
+			a := strings.TrimSpace(scanner1.Text())
+			valor, err1 := strconv.Atoi(a)
+			if err1 != nil {
+				log.Print("Por favor ingrese un número válido")
+			}
+			
+			s.AgregarProducto(region, producto, int32(valor))
+
+		case 2:
+			scanner1 := bufio.NewScanner(os.Stdin)
+			log.Print("Opcion Renombrar Producto")
+			log.Print("Ingrese la región del producto: ")
+			scanner1.Scan()
+			region := strings.TrimSpace(scanner1.Text())
+			log.Print("Ingrese el nombre del producto a renombrar: ")
+			scanner1.Scan()
+			producto := strings.TrimSpace(scanner1.Text())
+			log.Print("Ingrese el nuevo nombre del producto: ")
+			scanner1.Scan()
+			newName := strings.TrimSpace(scanner1.Text())
+
+			s.RenombrarProducto(region, producto, newName)
+
+		case 3:
+			scanner1 := bufio.NewScanner(os.Stdin)
+			log.Print("Opcion Actualizar Valor")
+			log.Print("Ingrese la región del producto: ")
+			scanner1.Scan()
+			region := strings.TrimSpace(scanner1.Text())
+			log.Print("Ingrese el nombre del producto: ")
+			scanner1.Scan()
+			producto := strings.TrimSpace(scanner1.Text())
+			log.Print("Ingrese el nuevo valor del producto: ")
+			scanner1.Scan()
+			a := strings.TrimSpace(scanner1.Text())
+			valor, err1 := strconv.Atoi(a)
+			if err1 != nil {
+				log.Print("Por favor ingrese un número válido")
+			}
+
+			s.ActualizarValor(region, producto, int32(valor))
+
+		case 4:
+			scanner1 := bufio.NewScanner(os.Stdin)
+			log.Print("Opcion Eliminar Producto")
+			log.Print("Ingrese la región del producto: ")
+			scanner1.Scan()
+			region := strings.TrimSpace(scanner1.Text())
+			log.Print("Ingrese el nombre del producto a eliminar: ")
+			scanner1.Scan()
+			producto := strings.TrimSpace(scanner1.Text())
+			
+			s.BorrarProducto(region, producto)
+
+		case 5: 
+			log.Print("Opción Salir")
+			return
+
+		default:
+			log.Print("Opción no válida, por favor escoja un número entre 1 y 5.")
+		}
+	}
+}
+
 func main() {
 	log.Print("El supervisor está corriendo...")
 
@@ -304,9 +404,14 @@ func main() {
 			conn.Close()
 		}
 	}()
+	
+	menu(supervisor)
 
-	supervisor.AgregarProducto("Noxus", "Vino", 25)
-	supervisor.RenombrarProducto("Noxus", "Vino", "Cerveza")
+/* 	supervisor.AgregarProducto("Noxus", "Vino", 25)
+	supervisor.AgregarProducto("a", "A", 1)
+	supervisor.AgregarProducto("b", "B", 2)
+	supervisor.AgregarProducto("c", "C", 3) */
+/* 	supervisor.RenombrarProducto("Noxus", "Vino", "Cerveza")
 	supervisor.ActualizarValor("Noxus", "Cerveza", 50)
-	supervisor.BorrarProducto("Noxus", "Cerveza")
+	supervisor.BorrarProducto("Noxus", "Cerveza") */
 }
