@@ -10,10 +10,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
+    "time"
 	jayceserver_pb "servidores_hextech/grpc/jayce-server"
 	servbroker_pb "servidores_hextech/grpc/serv_broker" // Comunicación con el Broker
 	supserv_pb "servidores_hextech/grpc/sup-serv"       // Comunicación con Supervisores
+    hextech_pb "servidores_hextech/grpc/hextech"
 
 	"google.golang.org/grpc"
 )
@@ -26,7 +27,8 @@ const DominantNodeID = 1 // Nodo dominante Definido de manera estática
 type HextechServer struct {
 	supserv_pb.UnimplementedHextechServiceServer    // Servicio para Supervisores
 	servbroker_pb.UnimplementedHextechServerServiceServer // Servicio para el Broker
-	jayceserver_pb.UnimplementedJayceServerServiceServer
+	jayceserver_pb.UnimplementedJayceServerServiceServer // Servicio para Jayce
+    hextech_pb.UnimplementedConsistenciaServiceServer // Servicio para otros servidores Hextech
 	serverID       int                              // Identificador único del servidor
     vectorClock    map[string][3]int32    // Mapeo región -> reloj vectorial
 	data           map[string]map[string]int32      // Almacén de productos por región
@@ -43,6 +45,69 @@ func NuevoServidorHextech(id int) *HextechServer {
 		data:        make(map[string]map[string]int32),
 	}
 }
+
+
+
+
+
+//--------------------------------------------------------Consistencias Eventual------------------------------------------------------------------------------
+
+// Función para devolver los logs cuando se soliciten
+func (s *HextechServer) GetLogs(ctx context.Context, req *hextech_pb.GetLogsRequest) (*hextech_pb.GetLogsResponse, error) {
+    s.logMutex.Lock()
+    defer s.logMutex.Unlock()
+    return &hextech_pb.GetLogsResponse{Logs: s.logs}, nil
+}
+
+// Función para recopilar logs de otros servidores
+func (s *HextechServer) recopilarLogs() [][]string {
+    var logsRecopilados [][]string
+    for i := 1; i <= 3; i++ {
+        if i == s.serverID {
+            continue
+        }
+        conn, err := grpc.Dial(fmt.Sprintf("container_hextech%d:5005%d", i, i), grpc.WithInsecure())
+        if err != nil {
+            log.Printf("Error al conectar con el servidor %d: %v", i, err)
+            continue
+        }
+        defer conn.Close()
+
+        client := hextech_pb.NewConsistenciaServiceClient(conn)
+        req := &hextech_pb.GetLogsRequest{Region: "all"} // Ajusta según tu implementación
+        resp, err := client.GetLogs(context.Background(), req)
+        if err != nil {
+            log.Printf("Esperando disponibilidad del servidor :%d", i, )
+            continue
+        }
+
+        logsRecopilados = append(logsRecopilados, resp.Logs)
+    }
+    return logsRecopilados
+}
+
+func (s *HextechServer) ejecutarLogicaDominante() {
+    ticker := time.NewTicker(30 * time.Second)
+    defer ticker.Stop()
+
+    for range ticker.C {
+        logs := s.recopilarLogs()
+        s.mergeLogs(logs)
+        log.Println("Propagando cambios a otros servidores de parte de Nodo dominante")
+
+    }
+}
+
+// Función para realizar el merge de los logs
+func (s *HextechServer) mergeLogs(logs [][]string) {
+    // Implementar lógica de merge aquí
+    // Actualizar data y vectorClock
+}
+
+//---------------------------------------------------------Fin consistencias Eventual------------------------------------------------------------------------------
+
+
+
 
 //Log de Registro
 func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string) {
@@ -115,7 +180,7 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 
 
 
-//Incrementar Reloj------------------------------------------------------------------
+//------------------------------------------------------Incrementar Reloj------------------------------------------------------------------
 	reloj := s.vectorClock[region]
     
     // Incrementa la dimensión correspondiente al servidor actual
@@ -249,11 +314,6 @@ func leerArchivo(region string) map[string]int32 {
     return productos
 }
 
-func (s *HextechServer) mergeLogs(logs [][]string) {
-    // Implementar lógica de merge aquí
-    // Actualizar data y vectorClock
-}
-
 // **Ejecución del Servidor**
 func (s *HextechServer) RunServer(port string) {
 	lis, err := net.Listen("tcp", port)
@@ -265,6 +325,7 @@ func (s *HextechServer) RunServer(port string) {
 	supserv_pb.RegisterHextechServiceServer(grpcServer, s)
 	servbroker_pb.RegisterHextechServerServiceServer(grpcServer, s)
 	jayceserver_pb.RegisterJayceServerServiceServer(grpcServer, s)
+    hextech_pb.RegisterConsistenciaServiceServer(grpcServer, s)
 
 	log.Printf("Servidor Hextech %d escuchando en el puerto %v\n", s.serverID, port)
 	if err := grpcServer.Serve(lis); err != nil {
@@ -322,11 +383,11 @@ func main() {
 
 	server := NuevoServidorHextech(idServer)
 	go server.RunServer(port)
-
+    
+    // Lógica para el nodo dominante
 	if idServer == DominantNodeID {
+        go server.ejecutarLogicaDominante()
 
-        // Lógica para el nodo dominante
-        // Recopilar logs de otros servidores y realizar merge
     }
 
 	select {} // Mantener el programa activo

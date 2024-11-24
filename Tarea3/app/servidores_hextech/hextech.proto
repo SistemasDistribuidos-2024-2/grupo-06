@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "grpc/hextech";
+
+package hextech;
+
+service ConsistenciaService {
+  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+}
+
+message GetLogsRequest {
+  string region = 1;
+}
+
+message GetLogsResponse {
+  repeated string logs = 1;
+}
