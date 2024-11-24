@@ -20,6 +20,8 @@ type Jayce struct {
 	client    pb.JayceBrokerServiceClient
 	clientServer pbserver.JayceServerServiceClient
 	consultas []Consulta // Almacena las consultas realizadas
+	connPool map[string]*grpc.ClientConn
+	serverClients map[string]pbserver.JayceServerServiceClient
 }
 
 type Consulta struct {
@@ -37,7 +39,7 @@ func NewJayce() *Jayce {
 
 	client := pb.NewJayceBrokerServiceClient(conn)
 	log.Println("Conectado exitosamente al Broker(instancia Jayce creada)")
-	return &Jayce{client: client}
+	return &Jayce{client: client, connPool: make(map[string]*grpc.ClientConn), serverClients: make(map[string]pbserver.JayceServerServiceClient)}
 }
 
 // ObtenerProducto envía una solicitud de consulta al Broker para obtener el puerto del servidor asignado
@@ -83,6 +85,33 @@ func (j *Jayce) ObtenerServidor(region, product string) (*pb.JayceRequest, strin
 	return req, puerto, nil
 }
 
+func (j *Jayce) getServerClient(direccion string) pbserver.JayceServerServiceClient {
+    if client, exists := j.serverClients[direccion]; exists {
+        return client // Reutiliza el cliente si ya existe
+    }
+
+    conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
+    if err != nil {
+        log.Fatalf("No se pudo conectar al servidor: %v", err)
+    }
+
+    // Almacena la conexión y el cliente en el pool
+    j.connPool[direccion] = conn
+    client := pbserver.NewJayceServerServiceClient(conn)
+    j.serverClients[direccion] = client
+
+    return client
+}
+
+func (j *Jayce) CloseConnections() {
+    for _, conn := range j.connPool {
+        if err := conn.Close(); err != nil {
+            log.Printf("Error al cerrar la conexión: %v", err)
+        }
+    }
+}
+
+
 func (j *Jayce) ObtenerProducto(region, product string) (error) {
 	req := &pbserver.JayceRequest{
 		Region: region,
@@ -90,14 +119,11 @@ func (j *Jayce) ObtenerProducto(region, product string) (error) {
 	}
 
 	_, direccion, err := j.ObtenerServidor(region, product)
-
-	conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		log.Fatalf("No se pudo conectar al Servidor Hextech: %v", err)
+		return err
 	}
-	defer conn.Close()
 
-	client := pbserver.NewJayceServerServiceClient(conn)
+	client := j.getServerClient(direccion)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -135,6 +161,7 @@ func main() {
 	// Inicializa a Jayce y realiza consultas
 	log.Println("Iniciando servidor Jayce...")
 	jayce := NewJayce()
+	defer jayce.CloseConnections()
 	log.Println("Jayce ha sido inicializado")
 
 	// Ejemplo de consultas realizadas por Jayce
