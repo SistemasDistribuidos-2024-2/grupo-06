@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	pb "supervisor_1/grpc/sup-broker"  // Proto para comunicarse con el Broker
-	hexpb "supervisor_1/grpc/sup-serv" // Proto para comunicarse con los Servidores Hextech
+	pb "supervisores_hexgate/grpc/sup-broker"  // Proto para comunicarse con el Broker
+	hexpb "supervisores_hexgate/grpc/sup-serv" // Proto para comunicarse con los Servidores Hextech
 
 	"google.golang.org/grpc"
 )

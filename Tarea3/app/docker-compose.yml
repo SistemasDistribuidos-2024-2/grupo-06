@@ -28,6 +28,8 @@ services:
       - "50051:50051" # Exponiendo el puerto del servidor Hextech 1
     environment:
       - SERVER_ID=1
+    volumes:
+      - ./logs/hextech1:/app/logs
 
   # Servidor Hextech 2
   hextech2:
@@ -39,6 +41,8 @@ services:
       - "50052:50052" # Exponiendo el puerto del servidor Hextech 2
     environment:
       - SERVER_ID=2
+    volumes:
+      - ./logs/hextech2:/app/logs
 
   # Servidor Hextech 3
   hextech3:
@@ -50,8 +54,10 @@ services:
       - "50053:50053" # Exponiendo el puerto del servidor Hextech 3
     environment:
       - SERVER_ID=3
+    volumes:
+      - ./logs/hextech3:/app/logs
 
-#Red EXTERNA que se crea mediante docker
+# Red EXTERNA que se crea mediante docker
 networks:
   network_tarea:
     external: true

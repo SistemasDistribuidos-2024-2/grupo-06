@@ -11,12 +11,15 @@ import (
 	"strings"
 	"sync"
 
-	jayceserver_pb "servidor_1/grpc/jayce-server"
-	servbroker_pb "servidor_1/grpc/serv_broker" // Comunicación con el Broker
-	supserv_pb "servidor_1/grpc/sup-serv"       // Comunicación con Supervisores
+	jayceserver_pb "servidores_hextech/grpc/jayce-server"
+	servbroker_pb "servidores_hextech/grpc/serv_broker" // Comunicación con el Broker
+	supserv_pb "servidores_hextech/grpc/sup-serv"       // Comunicación con Supervisores
 
 	"google.golang.org/grpc"
 )
+
+
+const DominantNodeID = 1 // Nodo dominante Definido de manera estática
 
 
 // HextechServer representa un servidor Hextech
@@ -51,16 +54,18 @@ func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado st
     s.logMutex.Unlock()
 
     // Escribir el log en un archivo
-    file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-    if err != nil {
+	file, err := os.OpenFile("/app/logs/logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)    
+	if err != nil {
         fmt.Println("Error al abrir el archivo de logs:", err)
         return
     }
     defer file.Close()
 
-    if _, err := file.WriteString(message + "\n"); err != nil {
-        fmt.Println("Error al escribir en el archivo de logs:", err)
-    }
+	if _, err := file.WriteString(message + "\n"); err != nil {
+		fmt.Println("Error al escribir en el archivo de logs:", err)
+	} else {
+		fmt.Println("Log escrito correctamente en el archivo de logs")
+	}
 }
 
 // **HandleRequest**: Manejo de solicitudes desde Supervisores
@@ -209,6 +214,11 @@ func leerArchivo(region string) map[string]int32 {
 	return productos
 }
 
+func (s *HextechServer) mergeLogs(logs [][]string) {
+    // Implementar lógica de merge aquí
+    // Actualizar data y vectorClock
+}
+
 // **Ejecución del Servidor**
 func (s *HextechServer) RunServer(port string) {
 	lis, err := net.Listen("tcp", port)
@@ -276,6 +286,11 @@ func main() {
 
 	server := NuevoServidorHextech(idServer)
 	go server.RunServer(port)
+
+	if idServer == DominantNodeID {
+        // Lógica para el nodo dominante
+        // Recopilar logs de otros servidores y realizar merge
+    }
 
 	select {} // Mantener el programa activo
 }

@@ -1,4 +1,4 @@
-module servidor_1
+module servidores_hextech
 
 go 1.22.7
 

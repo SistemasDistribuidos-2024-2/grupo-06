@@ -1,4 +1,4 @@
-module supervisor_1
+module supervisores_hexgate
 
 go 1.22.7
 
