@@ -31,9 +31,9 @@ type Broker struct {
 func NewBroker() *Broker {
 	log.Print("Inicializando el Broker...")
 	servers := []string{
-		"localhost:50051", // Servidor Hextech 1
-		"localhost:50052", // Servidor Hextech 2
-		"localhost:50053", // Servidor Hextech 3
+		"container_hextech1:50051", // Servidor Hextech 1
+		"container_hextech2:50052", // Servidor Hextech 2
+		"container_hextech3:50053", // Servidor Hextech 3
 	}
 	log.Printf("Servidores Hextech registrados: %v", servers)
 	return &Broker{servers: servers}

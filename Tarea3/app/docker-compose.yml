@@ -1,7 +1,7 @@
 version: '3'
 services:
   supervisores:
-    build: ./supervisores_hexgate
+    build: ./supervisores_hexgate/supervisor_1
     container_name: container_supervisores
     networks:
       - network_tarea
@@ -32,7 +32,7 @@ services:
 
   # Servidor Hextech 2
   hextech2:
-    build: ./servidores_hextech
+    build: ./servidores_hextech/servidor_2
     container_name: container_hextech2
     networks:
       - network_tarea
@@ -43,7 +43,7 @@ services:
 
   # Servidor Hextech 3
   hextech3:
-    build: ./servidores_hextech
+    build: ./servidores_hextech/servidor_3
     container_name: container_hextech3
     networks:
       - network_tarea
