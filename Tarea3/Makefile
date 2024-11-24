@@ -15,5 +15,5 @@ docker-broker:
 	@docker-compose -f ./app/docker-compose.yml up broker
 
 # Comando para crear e inciar un servicio de Supervisor
-docker-supervisor1:
+docker-supervisor:
 	@docker-compose -f ./app/docker-compose.yml up supervisor
