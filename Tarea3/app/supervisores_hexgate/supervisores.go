@@ -307,7 +307,6 @@ func menu(s *Supervisor){
 		log.Print("4) Eliminar Producto")
 		log.Print("5) Salir")
 		log.Print("Seleccione acción: ")
-		time.Sleep(time.Second * 10)
 		scanner.Scan()
 		entrada := strings.TrimSpace(scanner.Text())
 
