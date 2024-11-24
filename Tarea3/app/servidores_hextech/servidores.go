@@ -11,17 +11,13 @@ import (
 	"strings"
 	"sync"
 
-	jayceserver_pb "servidor_2/grpc/jayce-server"
-	servbroker_pb "servidor_2/grpc/serv_broker" // Comunicación con el Broker
-	supserv_pb "servidor_2/grpc/sup-serv"       // Comunicación con Supervisores
+	jayceserver_pb "servidor_1/grpc/jayce-server"
+	servbroker_pb "servidor_1/grpc/serv_broker" // Comunicación con el Broker
+	supserv_pb "servidor_1/grpc/sup-serv"       // Comunicación con Supervisores
 
 	"google.golang.org/grpc"
 )
 
-const (
-	idServer = 2
-	port = ":50052" // Puerto donde escuchará el servidor
-)
 
 // HextechServer representa un servidor Hextech
 type HextechServer struct {
@@ -44,57 +40,72 @@ func NuevoServidorHextech(id int) *HextechServer {
 		data:        make(map[string]map[string]int32),
 	}
 }
+//Log de Registro
+func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string, nuevoValor int32) {
+    // Formatear el mensaje del log
+    message := fmt.Sprintf("%s %s %s %d", accion, regionAfectada, productoAfectado, nuevoValor)
+
+    // Guardar la operación en el log
+    s.logMutex.Lock()
+    s.logs = append(s.logs, message)
+    s.logMutex.Unlock()
+
+    // Escribir el log en un archivo
+    file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo de logs:", err)
+        return
+    }
+    defer file.Close()
+
+    if _, err := file.WriteString(message + "\n"); err != nil {
+        fmt.Println("Error al escribir en el archivo de logs:", err)
+    }
+}
 
 // **HandleRequest**: Manejo de solicitudes desde Supervisores
 func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.SupervisorRequest) (*supserv_pb.ServerResponse, error) {
-	s.vectorMutex.Lock()
-	defer s.vectorMutex.Unlock()
+    s.vectorMutex.Lock()
+    defer s.vectorMutex.Unlock()
 
-	region := req.Region
-	product := req.ProductName
-	var message string
+    region := req.Region
+    product := req.ProductName
 
-	// Procesar la operación
-	switch req.OperationType {
-	case supserv_pb.OperationType_AGREGAR:
-		s.AgregarProducto(region, product, *req.Value)
-		message = fmt.Sprintf("Producto agregado: %s en %s con cantidad %d", product, region, req.Value)
-	case supserv_pb.OperationType_RENOMBRAR:
-		s.RenombrarProducto(region, product, *req.NewProductName)
-		message = fmt.Sprintf("Producto renombrado: %s en %s a %s", product, region, *(req.NewProductName))
-	case supserv_pb.OperationType_ACTUALIZAR:
-		s.ActualizarValor(region, product, *req.Value)
-		message = fmt.Sprintf("Producto actualizado: %s en %s con cantidad %d", product, region, req.Value)
-	case supserv_pb.OperationType_BORRAR:
-		s.BorrarProducto(region, product)
-		message = fmt.Sprintf("Producto borrado: %s en %s", product, region)
-	default:
-		errorMessage := "Operación no reconocida"
-		return &supserv_pb.ServerResponse{
-			Status:  supserv_pb.ResponseStatus_ERROR,
-			Message: &errorMessage,
-		}, nil
-	}
+    // Procesar la operación
+    switch req.OperationType {
+    case supserv_pb.OperationType_AGREGAR:
+        s.AgregarProducto(region, product, *req.Value)
+    case supserv_pb.OperationType_RENOMBRAR:
+        s.RenombrarProducto(region, product, *req.NewProductName)
+    case supserv_pb.OperationType_ACTUALIZAR:
+        s.ActualizarValor(region, product, *req.Value)
+    case supserv_pb.OperationType_BORRAR:
+        s.BorrarProducto(region, product)
+    default:
+        errorMessage := "Operación no reconocida"
+        return &supserv_pb.ServerResponse{
+            Status:  supserv_pb.ResponseStatus_ERROR,
+            Message: &errorMessage,
+        }, nil
+    }
 
-	// Incrementa el reloj vectorial del servidor actual
-	s.vectorClock[s.serverID-1]++
+    // Incrementa el reloj vectorial del servidor actual
+    s.vectorClock[s.serverID-1]++
 
-	// Guarda la operación en el log
-	s.logMutex.Lock()
-	s.logs = append(s.logs, message)
-	s.logMutex.Unlock()
+    // Llama a la función registrarLog
+    s.registrarLog(req.OperationType.String(), region, product, *req.Value)
 
-	// Prepara el reloj vectorial para la respuesta
-	vectorClock := &supserv_pb.VectorClock{
-		Server1: s.vectorClock[0],
-		Server2: s.vectorClock[1],
-		Server3: s.vectorClock[2],
-	}
+    // Prepara el reloj vectorial para la respuesta
+    vectorClock := &supserv_pb.VectorClock{
+        Server1: s.vectorClock[0],
+        Server2: s.vectorClock[1],
+        Server3: s.vectorClock[2],
+    }
 
-	return &supserv_pb.ServerResponse{
-		Status:      supserv_pb.ResponseStatus_OK,
-		VectorClock: vectorClock,
-	}, nil
+    return &supserv_pb.ServerResponse{
+        Status:      supserv_pb.ResponseStatus_OK,
+        VectorClock: vectorClock,
+    }, nil
 }
 
 // **GetVectorClock**: Método para devolver el reloj vectorial al Broker
@@ -243,6 +254,26 @@ func (s *HextechServer) ObtenerProducto(ctx context.Context, req *jayceserver_pb
 }
 
 func main() {
+    idServerStr := os.Getenv("SERVER_ID")
+    idServer, err := strconv.Atoi(idServerStr)
+    if err != nil {
+        fmt.Println("SERVER_ID no válido")
+        return
+    }
+
+    var port string
+    switch idServer {
+    case 1:
+        port = ":50051"
+    case 2:
+        port = ":50052"
+    case 3:
+        port = ":50053"
+    default:
+        fmt.Println("SERVER_ID no válido")
+        return
+    }
+
 	server := NuevoServidorHextech(idServer)
 	go server.RunServer(port)
 

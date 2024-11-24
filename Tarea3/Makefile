@@ -14,6 +14,8 @@ docker-jayce:
 docker-broker:
 	@docker-compose -f ./app/docker-compose.yml up broker
 
-# Comando para crear e inciar el servicio de Supervisores
-docker-supervisores:
-	@docker-compose -f ./app/docker-compose.yml up supervisores
+# Comando para crear e inciar el servicio de Supervisor
+docker-supervisor1:
+	@docker-compose -f ./app/docker-compose.yml up supervisor1
+docker-supervisor2:
+	@docker-compose -f ./app/docker-compose.yml up supervisor1
