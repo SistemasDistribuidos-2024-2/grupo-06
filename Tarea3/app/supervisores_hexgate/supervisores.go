@@ -30,6 +30,8 @@ type Supervisor struct {
 	client    pb.BrokerServiceClient // Cliente para comunicarse con el Broker
 	conn      *grpc.ClientConn       // Conexión al Broker
 	registros map[string]Registro    // Almacena el estado local
+	hexClients map[string]hexpb.HextechServiceClient
+	connPool map[string]*grpc.ClientConn
 }
 
 // **Crear un nuevo Supervisor**
@@ -41,8 +43,24 @@ func NuevoSupervisor() *Supervisor {
 	}
 	log.Print("Conexión exitosa al Broker")
 	client := pb.NewBrokerServiceClient(conn)
-	return &Supervisor{client: client, conn: conn, registros: make(map[string]Registro)}
+	return &Supervisor{client: client, conn: conn, registros: make(map[string]Registro), hexClients: make(map[string]hexpb.HextechServiceClient), connPool: make(map[string]*grpc.ClientConn)}
 }
+
+func (s *Supervisor) getHexClient(direccion string) hexpb.HextechServiceClient {
+    if client, exists := s.hexClients[direccion]; exists {
+        return client // Reutiliza el cliente si ya existe
+    }
+
+    conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
+    if err != nil {
+        log.Fatalf("No se pudo conectar al Servidor Hextech: %v", err)
+    }
+    s.connPool[direccion] = conn
+    client := hexpb.NewHextechServiceClient(conn)
+    s.hexClients[direccion] = client
+    return client
+}
+
 
 // **Obtener dirección del servidor Hextech desde el Broker**
 func (s *Supervisor) GetServer(region string) string {
@@ -61,13 +79,7 @@ func (s *Supervisor) GetServer(region string) string {
 
 // **Comunicación directa con el Servidor Hextech**
 func (s *Supervisor) EnviarSolicitudAServidor(direccion string, req *hexpb.SupervisorRequest) bool {
-	conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("No se pudo conectar al Servidor Hextech: %v", err)
-	}
-	defer conn.Close()
-
-	client := hexpb.NewHextechServiceClient(conn)
+	client := s.getHexClient(direccion)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -281,6 +293,9 @@ func main() {
 	defer func() {
 		if err := supervisor.conn.Close(); err != nil {
 			log.Fatalf("Error al cerrar la conexión: %v", err)
+		}
+		for _, conn := range supervisor.connPool {
+			conn.Close()
 		}
 	}()
 
