@@ -68,9 +68,9 @@ func (s *HextechServer) ObtenerReloj(region string) [3]int32 {
 
 
 //Log de Registro
-func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string, nuevoValor int32) {
+func (s *HextechServer) registrarLog(accion, regionAfectada, productoAfectado string) {
     // Formatear el mensaje del log
-    message := fmt.Sprintf("%s %s %s %d", accion, regionAfectada, productoAfectado, nuevoValor)
+    message := fmt.Sprintf("%s %s %s", accion, regionAfectada, productoAfectado)
 
     // Guardar la operación en el log
     s.logMutex.Lock()
@@ -124,7 +124,7 @@ func (s *HextechServer) HandleRequest(ctx context.Context, req *supserv_pb.Super
 
 
     // Llama a la función registrarLog
-    s.registrarLog(req.OperationType.String(), region, product, *req.Value)
+    s.registrarLog(req.OperationType.String(), region, product)
 
 	// Prepara el reloj vectorial para la respuesta
 	vectorClock := &supserv_pb.VectorClock{

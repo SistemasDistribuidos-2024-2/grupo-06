@@ -92,6 +92,11 @@ func (s *Supervisor) EnviarSolicitudAServidor(direccion string, req *hexpb.Super
 	}
 
 	// Procesar la solicitud
+	log.Print(req)
+	if req.OperationType == hexpb.OperationType_ACTUALIZAR {
+		log.Print("RENOMBRAR")
+		log.Print(req.ProductName)
+	}
 	res, err := client.HandleRequest(ctx, req)
 	if err != nil {
 		log.Fatalf("Error al procesar la solicitud en el Servidor Hextech: %v", err)
@@ -223,7 +228,7 @@ func (s *Supervisor) AgregarProducto(region, producto string, valor int32) {
 
 // RenombrarProducto renombra un producto en el registro de una región
 func (s *Supervisor) RenombrarProducto(region, producto, nuevoNombre string) {
-    if !s.LeerConsistente(region, producto) {
+    /* if !s.LeerConsistente(region, producto) {
 		direccion := s.ResolverInconsistencia(region, producto, nil)
 		req := &hexpb.SupervisorRequest{
 			Region:        region,
@@ -231,21 +236,22 @@ func (s *Supervisor) RenombrarProducto(region, producto, nuevoNombre string) {
 			OperationType: hexpb.OperationType_RENOMBRAR,
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
-	} else {
+	} else { */
+		nuevo := nuevoNombre
 		direccion := s.GetServer(region)
 		req := &hexpb.SupervisorRequest{
 			Region:        region,
 			ProductName:   producto,
 			OperationType: hexpb.OperationType_RENOMBRAR,
-			NewProductName: &nuevoNombre,
+			NewProductName: &nuevo,
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
-	}
+	//}
 }
 
 // ActualizarValor actualiza el valor de un producto en el registro de una región
 func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) {
-    if !s.LeerConsistente(region, producto) {
+    /* if !s.LeerConsistente(region, producto) {
 		direccion := s.ResolverInconsistencia(region, producto, nil)
 		req := &hexpb.SupervisorRequest{
 			Region:        region,
@@ -253,7 +259,7 @@ func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) 
 			OperationType: hexpb.OperationType_RENOMBRAR,
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
-	} else {
+	} else { */
 		direccion := s.GetServer(region)
 		req := &hexpb.SupervisorRequest{
 			Region:       region,
@@ -262,12 +268,12 @@ func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) 
 			Value:        &nuevoValor,
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
-	}
+	//}
 }
 
 // BorrarProducto elimina un producto del registro de una región
 func (s *Supervisor) BorrarProducto(region, producto string) {
-	if !s.LeerConsistente(region, producto) {
+	/* if !s.LeerConsistente(region, producto) {
 		direccion := s.ResolverInconsistencia(region, producto, nil)
 		req := &hexpb.SupervisorRequest{
 			Region:        region,
@@ -275,7 +281,7 @@ func (s *Supervisor) BorrarProducto(region, producto string) {
 			OperationType: hexpb.OperationType_RENOMBRAR,
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
-	} else {
+	} else { */
 		direccion := s.GetServer(region)
 		req := &hexpb.SupervisorRequest{
 			Region:       region,
@@ -283,7 +289,7 @@ func (s *Supervisor) BorrarProducto(region, producto string) {
 			OperationType: hexpb.OperationType_BORRAR,
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
-	}
+	//}
 }
 
 func main() {
