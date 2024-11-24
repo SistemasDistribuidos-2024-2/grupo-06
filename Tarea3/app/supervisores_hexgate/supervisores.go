@@ -306,7 +306,10 @@ func main() {
 	}()
 
 	supervisor.AgregarProducto("Noxus", "Vino", 25)
-	supervisor.RenombrarProducto("Noxus", "Vino", "Cerveza")
+	supervisor.AgregarProducto("a", "A", 1)
+	supervisor.AgregarProducto("b", "B", 2)
+	supervisor.AgregarProducto("c", "C", 3)
+/* 	supervisor.RenombrarProducto("Noxus", "Vino", "Cerveza")
 	supervisor.ActualizarValor("Noxus", "Cerveza", 50)
-	supervisor.BorrarProducto("Noxus", "Cerveza")
+	supervisor.BorrarProducto("Noxus", "Cerveza") */
 }
