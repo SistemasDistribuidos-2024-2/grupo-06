@@ -18,13 +18,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-<<<<<<< Updated upstream
 
 const DominantNodeID = 1 // Nodo dominante Definido de manera estática
 
 
-=======
->>>>>>> Stashed changes
 // HextechServer representa un servidor Hextech
 type HextechServer struct {
 	supserv_pb.UnimplementedHextechServiceServer    // Servicio para Supervisores
