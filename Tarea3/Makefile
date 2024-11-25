@@ -22,7 +22,7 @@ docker-run-servidor2:
 	-v $(pwd)/logs/hextech2:/app/logs \
 	-v $(pwd)/mercancias/hextech2:/app/mercancias \
 	547e37b93036
-docker-run-servidor2:
+docker-run-servidor3:
 	@sudo docker run -d -p 50053:50053 -e SERVER_ID=3 \
 	-v $(pwd)/logs/hextech3:/app/logs \
 	-v $(pwd)/mercancias/hextech3:/app/mercancias \
