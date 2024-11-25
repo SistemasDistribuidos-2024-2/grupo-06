@@ -91,7 +91,7 @@ func (s *HextechServer) recopilarLogs() []*hextech_pb.GetLogsResponse {
         if i == s.serverID {
             continue
         }
-        conn, err := grpc.Dial(fmt.Sprintf("container_hextech%d:5005%d", i, i), grpc.WithInsecure())
+        conn, err := grpc.Dial(fmt.Sprintf("dist02%d:5005%d", i, i), grpc.WithInsecure())
         if err != nil {
             log.Printf("Error al conectar con el servidor %d: %v", i, err)
             continue
@@ -185,7 +185,7 @@ func (s *HextechServer) propagateChanges() {
         if i == s.serverID {
             continue
         }
-        conn, err := grpc.Dial(fmt.Sprintf("container_hextech%d:5005%d", i, i), grpc.WithInsecure())
+        conn, err := grpc.Dial(fmt.Sprintf("dist02%d:5005%d", i, i), grpc.WithInsecure())
         if err != nil {
             log.Printf("Error al conectar con el servidor %d: %v", i, err)
             continue

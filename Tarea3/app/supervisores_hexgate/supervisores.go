@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	brokerAddress = "container_broker:50054" // Dirección del Broker
+	brokerAddress = "dist024:50054" // Dirección del Broker
 )
 
 // **Estructura de Registro**
