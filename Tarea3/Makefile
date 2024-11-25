@@ -27,3 +27,6 @@ docker-run-servidor3:
 	-v $(pwd)/logs/hextech3:/app/logs \
 	-v $(pwd)/mercancias/hextech3:/app/mercancias \
 	9879ba137678
+docker-run-broker:
+	@sudo docker run -p 50054:50054 c09362b2e213
+
