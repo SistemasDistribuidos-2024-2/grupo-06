@@ -268,6 +268,8 @@ func menu(j *Jayce){
 
 func main() {
 	// Inicializa a Jayce y realiza consultas
+	log.Print("Jayce está esperando...")
+	time.Sleep(2 * time.Minute)
 	log.Println("Iniciando servidor Jayce...")
 	jayce := NewJayce()
 	defer jayce.CloseConnections()
@@ -275,27 +277,6 @@ func main() {
 
 	menu(jayce)
 
-	// Ejemplo de consultas realizadas por Jayce
-/* 	err1 := jayce.ObtenerProducto("Noxus", "Vino")
-	if err1 != nil {
-		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err1)
-	} else {
-		log.Printf("Consulta exitosa")
-	}
-	err2 := jayce.ObtenerProducto("a", "A")
-	//err2 := jayce.ObtenerProducto("Demacia", "Espadas")
-	if err2 != nil {
-		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err2)
-	} else {
-		log.Printf("Consulta exitosa")
-	}
-	err3 := jayce.ObtenerProducto("b", "B")
-	//err3 := jayce.ObtenerProducto("Piltover", "Cristales Hextech")
-	if err3 != nil {
-		log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err3)
-	} else {
-		log.Printf("Consulta exitosa")
-	} */
 	// Imprime las consultas almacenadas
 	for _, consulta := range jayce.consultas {
 		log.Printf("Consulta: Región: %s, Producto: %s, Respuesta: %v, Error: %v",

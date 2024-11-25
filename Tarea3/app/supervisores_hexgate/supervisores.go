@@ -392,6 +392,9 @@ func menu(s *Supervisor){
 }
 
 func main() {
+	
+	log.Print("El supervisor está esperando...")
+	time.Sleep(2 * time.Minute)
 	log.Print("El supervisor está corriendo...")
 
 	supervisor := NuevoSupervisor()
