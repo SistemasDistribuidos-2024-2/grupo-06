@@ -79,7 +79,7 @@ func (j *Jayce) ActualizarRegistro(region, producto string, res *pbserver.JayceR
         RelojVectorial:  res.VectorClock,
 		UltimoServidor: servidor,
     }
-    log.Printf("Registro actualizado: Región: %s, Producto: %s, Reloj Vector: {Server1: %d, Server2: %d, Server3: %d}:", region, producto, res.VectorClock.Server1,res.VectorClock.Server2,res.VectorClock.Server3)
+    log.Printf("Registro actualizado: Región: %s, Producto: %s, Reloj Vectorial asiciado a esta region: {Server1: %d, Server2: %d, Server3: %d}", region, producto, res.VectorClock.Server1,res.VectorClock.Server2,res.VectorClock.Server3)
 }
 
 
@@ -195,7 +195,7 @@ func (j *Jayce) ObtenerProducto(region, product string) (error) {
 
 	vectorClock := res.VectorClock
 
-	log.Printf("Respuesta del Servidor: Cantidad: %v, Reloj de Vectores: %s", cantidad, vectorClock)
+	log.Printf("Respuesta del Servidor: Cantidad: %v, Reloj Vectorial asiciado a esta region: {Server1: %d, Server2: %d, Server3: %d}", cantidad, vectorClock.Server1,vectorClock.Server2,vectorClock.Server3)
 
 	j.AlmacenarConsulta(req, res, err)
 
