@@ -10,13 +10,13 @@
 Para crear las imágenes, construir los contenedores y correr todo:
 Desde la carpeta grupo-06 escribir en la consola en el siguiente orden:
 
-1. (en dist021) make docker-servidor1
-2. (en dist022) make docker-servidor2
-3. (en dist023) make docker-servidor3
-4. (en dist024) make docker-broker
-5. (en dist021) make docker-supervisor
-6. (en dist023) make docker-supervisor
-7. (en dist022) make docker-jayce
+1. (en dist021) sudo make docker-run-servidor1
+2. (en dist022) sudo make docker-run-servidor2
+3. (en dist023) sudo make docker-run-servidor3
+4. (en dist024) sudo make docker-run-broker
+5. (en dist021) sudo make docker-supervisor
+6. (en dist023) sudo make docker-supervisor
+7. (en dist022) sudo make docker-jayce
 
 ## Consideraciones
 
