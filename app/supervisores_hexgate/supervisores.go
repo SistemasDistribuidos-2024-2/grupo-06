@@ -17,25 +17,25 @@ import (
 )
 
 const (
-	brokerAddress = "dist024:50054" // Dirección del Broker
+	brokerAddress = "container_broker:50054" // Dirección del Broker
 )
 
 // **Estructura de Registro**
 type Registro struct {
-	Region      string           // Región donde se encuentra el registro
-	Producto    string           // Nombre del producto
-	Valor       int32            // Valor (cantidad) del producto
+	Region      string             // Región donde se encuentra el registro
+	Producto    string             // Nombre del producto
+	Valor       int32              // Valor (cantidad) del producto
 	VectorClock *hexpb.VectorClock // Reloj vectorial de la última versión
-	Servidor    string           // Dirección del servidor Hextech que respondió
+	Servidor    string             // Dirección del servidor Hextech que respondió
 }
 
 // **Estructura del Supervisor**
 type Supervisor struct {
-	client    pb.BrokerServiceClient // Cliente para comunicarse con el Broker
-	conn      *grpc.ClientConn       // Conexión al Broker
-	registros map[string]Registro    // Almacena el estado local
+	client     pb.BrokerServiceClient // Cliente para comunicarse con el Broker
+	conn       *grpc.ClientConn       // Conexión al Broker
+	registros  map[string]Registro    // Almacena el estado local
 	hexClients map[string]hexpb.HextechServiceClient
-	connPool map[string]*grpc.ClientConn
+	connPool   map[string]*grpc.ClientConn
 }
 
 // **Crear un nuevo Supervisor**
@@ -51,20 +51,19 @@ func NuevoSupervisor() *Supervisor {
 }
 
 func (s *Supervisor) getHexClient(direccion string) hexpb.HextechServiceClient {
-    if client, exists := s.hexClients[direccion]; exists {
-        return client // Reutiliza el cliente si ya existe
-    }
+	if client, exists := s.hexClients[direccion]; exists {
+		return client // Reutiliza el cliente si ya existe
+	}
 
-    conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
-    if err != nil {
-        log.Fatalf("No se pudo conectar al Servidor Hextech: %v", err)
-    }
-    s.connPool[direccion] = conn
-    client := hexpb.NewHextechServiceClient(conn)
-    s.hexClients[direccion] = client
-    return client
+	conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("No se pudo conectar al Servidor Hextech: %v", err)
+	}
+	s.connPool[direccion] = conn
+	client := hexpb.NewHextechServiceClient(conn)
+	s.hexClients[direccion] = client
+	return client
 }
-
 
 // **Obtener dirección del servidor Hextech desde el Broker**
 func (s *Supervisor) GetServer(region string) string {
@@ -135,9 +134,9 @@ func (s *Supervisor) ResolverInconsistencia(region, producto string, vectorLocal
 		Server3: vectorLocal.Server3,
 	}
 	req := &pb.InconsistencyRequest{
-		Region:           region,
-		ProductName:      producto,
-		SupervisorClock:  currentVectorClock,
+		Region:          region,
+		ProductName:     producto,
+		SupervisorClock: currentVectorClock,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -225,7 +224,7 @@ func (s *Supervisor) AgregarProducto(region, producto string, valor int32) {
 
 // RenombrarProducto renombra un producto en el registro de una región
 func (s *Supervisor) RenombrarProducto(region, producto, nuevoNombre string) {
-    /* if !s.LeerConsistente(region, producto) {
+	/* if !s.LeerConsistente(region, producto) {
 		direccion := s.ResolverInconsistencia(region, producto, nil)
 		req := &hexpb.SupervisorRequest{
 			Region:        region,
@@ -234,21 +233,21 @@ func (s *Supervisor) RenombrarProducto(region, producto, nuevoNombre string) {
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
 	} else { */
-		nuevo := nuevoNombre
-		direccion := s.GetServer(region)
-		req := &hexpb.SupervisorRequest{
-			Region:        region,
-			ProductName:   producto,
-			OperationType: hexpb.OperationType_RENOMBRAR,
-			NewProductName: &nuevo,
-		}
-		s.EnviarSolicitudAServidor(direccion, req)
+	nuevo := nuevoNombre
+	direccion := s.GetServer(region)
+	req := &hexpb.SupervisorRequest{
+		Region:         region,
+		ProductName:    producto,
+		OperationType:  hexpb.OperationType_RENOMBRAR,
+		NewProductName: &nuevo,
+	}
+	s.EnviarSolicitudAServidor(direccion, req)
 	//}
 }
 
 // ActualizarValor actualiza el valor de un producto en el registro de una región
 func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) {
-    /* if !s.LeerConsistente(region, producto) {
+	/* if !s.LeerConsistente(region, producto) {
 		direccion := s.ResolverInconsistencia(region, producto, nil)
 		req := &hexpb.SupervisorRequest{
 			Region:        region,
@@ -257,14 +256,14 @@ func (s *Supervisor) ActualizarValor(region, producto string, nuevoValor int32) 
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
 	} else { */
-		direccion := s.GetServer(region)
-		req := &hexpb.SupervisorRequest{
-			Region:       region,
-			ProductName:  producto,
-			OperationType: hexpb.OperationType_ACTUALIZAR,
-			Value:        &nuevoValor,
-		}
-		s.EnviarSolicitudAServidor(direccion, req)
+	direccion := s.GetServer(region)
+	req := &hexpb.SupervisorRequest{
+		Region:        region,
+		ProductName:   producto,
+		OperationType: hexpb.OperationType_ACTUALIZAR,
+		Value:         &nuevoValor,
+	}
+	s.EnviarSolicitudAServidor(direccion, req)
 	//}
 }
 
@@ -279,17 +278,17 @@ func (s *Supervisor) BorrarProducto(region, producto string) {
 		}
 		s.EnviarSolicitudAServidor(direccion, req)
 	} else { */
-		direccion := s.GetServer(region)
-		req := &hexpb.SupervisorRequest{
-			Region:       region,
-			ProductName:  producto,
-			OperationType: hexpb.OperationType_BORRAR,
-		}
-		s.EnviarSolicitudAServidor(direccion, req)
+	direccion := s.GetServer(region)
+	req := &hexpb.SupervisorRequest{
+		Region:        region,
+		ProductName:   producto,
+		OperationType: hexpb.OperationType_BORRAR,
+	}
+	s.EnviarSolicitudAServidor(direccion, req)
 	//}
 }
 
-func menu(s *Supervisor){
+func menu(s *Supervisor) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 
@@ -308,7 +307,7 @@ func menu(s *Supervisor){
 			log.Print("Por favor ingrese un número válido")
 		}
 
-		switch opcion{
+		switch opcion {
 		case 1:
 			scanner1 := bufio.NewScanner(os.Stdin)
 			log.Print("Opcion Agregar Producto")
@@ -325,7 +324,7 @@ func menu(s *Supervisor){
 			if err1 != nil {
 				log.Print("Por favor ingrese un número válido")
 			}
-			
+
 			s.AgregarProducto(region, producto, int32(valor))
 
 		case 2:
@@ -371,10 +370,10 @@ func menu(s *Supervisor){
 			log.Print("Ingrese el nombre del producto a eliminar: ")
 			scanner1.Scan()
 			producto := strings.TrimSpace(scanner1.Text())
-			
+
 			s.BorrarProducto(region, producto)
 
-		case 5: 
+		case 5:
 			log.Print("Opción Salir")
 			return
 
@@ -385,7 +384,7 @@ func menu(s *Supervisor){
 }
 
 func main() {
-	
+
 	log.Print("El supervisor está esperando...")
 	time.Sleep(2 * time.Minute)
 	log.Print("El supervisor está corriendo...")
@@ -399,14 +398,14 @@ func main() {
 			conn.Close()
 		}
 	}()
-	
+
 	menu(supervisor)
 
-/* 	supervisor.AgregarProducto("Noxus", "Vino", 25)
-	supervisor.AgregarProducto("a", "A", 1)
-	supervisor.AgregarProducto("b", "B", 2)
-	supervisor.AgregarProducto("c", "C", 3) */
-/* 	supervisor.RenombrarProducto("Noxus", "Vino", "Cerveza")
-	supervisor.ActualizarValor("Noxus", "Cerveza", 50)
-	supervisor.BorrarProducto("Noxus", "Cerveza") */
+	/* 	supervisor.AgregarProducto("Noxus", "Vino", 25)
+	   	supervisor.AgregarProducto("a", "A", 1)
+	   	supervisor.AgregarProducto("b", "B", 2)
+	   	supervisor.AgregarProducto("c", "C", 3) */
+	/* 	supervisor.RenombrarProducto("Noxus", "Vino", "Cerveza")
+	   	supervisor.ActualizarValor("Noxus", "Cerveza", 50)
+	   	supervisor.BorrarProducto("Noxus", "Cerveza") */
 }

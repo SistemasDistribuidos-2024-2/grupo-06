@@ -21,19 +21,19 @@ const (
 
 // **Estructura del Broker**
 type Broker struct {
-	pb.UnimplementedJayceBrokerServiceServer            // Servicio para Jayce
+	pb.UnimplementedJayceBrokerServiceServer // Servicio para Jayce
 	pbsuper.UnimplementedBrokerServiceServer
-	servers                                  []string   // Lista de direcciones de los Servidores Hextech
-	serversMu                                sync.Mutex // Mutex para acceso concurrente a la lista de servidores
+	servers   []string   // Lista de direcciones de los Servidores Hextech
+	serversMu sync.Mutex // Mutex para acceso concurrente a la lista de servidores
 }
 
 // **Crear un nuevo Broker**
 func NewBroker() *Broker {
 	log.Print("Inicializando el Broker...")
 	servers := []string{
-		"dist021:50051", // Servidor Hextech 1
-		"dist022:50052", // Servidor Hextech 2
-		"dist023:50053", // Servidor Hextech 3
+		"container_hextech1:50051", // Servidor Hextech 1
+		"container_hextech1:50052", // Servidor Hextech 2
+		"container_hextech1:50053", // Servidor Hextech 3
 	}
 	log.Printf("Servidores Hextech registrados: %v", servers)
 	return &Broker{servers: servers}
@@ -61,17 +61,17 @@ func (b *Broker) ObtenerServidor(ctx context.Context, req *pb.JayceRequest) (*pb
 	return response, nil
 }
 
-func (b *Broker) GetServer(ctx context.Context, req *pbsuper.ServerRequest) (*pbsuper.ServerResponse, error){
+func (b *Broker) GetServer(ctx context.Context, req *pbsuper.ServerRequest) (*pbsuper.ServerResponse, error) {
 	log.Print("Asignando servidor...")
 	direccion := b.selectServerAddress()
 	return &pbsuper.ServerResponse{
 		ServerAddress: direccion,
 	}, nil
-	
+
 }
 
 func (b *Broker) selectServerAddress() string {
-    rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
 	num := rand.Intn(3) + 1
 	return b.servers[num-1]
 }

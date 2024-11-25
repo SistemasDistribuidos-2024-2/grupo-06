@@ -17,22 +17,22 @@ import (
 )
 
 const (
-	brokerAddress = "dist024:50054" // Dirección y puerto del Broker
+	brokerAddress = "container_broker:50054" // Dirección y puerto del Broker
 )
 
 type Registro struct {
-    UltimaRespuesta *pbserver.JayceResponse // Última respuesta recibida
-    RelojVectorial  *pbserver.VectorClock              // Último reloj vectorial asociado
-	UltimoServidor string
+	UltimaRespuesta *pbserver.JayceResponse // Última respuesta recibida
+	RelojVectorial  *pbserver.VectorClock   // Último reloj vectorial asociado
+	UltimoServidor  string
 }
 
 type Jayce struct {
-	client    pb.JayceBrokerServiceClient
-	clientServer pbserver.JayceServerServiceClient
-	consultas []Consulta // Almacena las consultas realizadas
-	connPool map[string]*grpc.ClientConn
-	serverClients map[string]pbserver.JayceServerServiceClient
-	registros map[string]Registro
+	client          pb.JayceBrokerServiceClient
+	clientServer    pbserver.JayceServerServiceClient
+	consultas       []Consulta // Almacena las consultas realizadas
+	connPool        map[string]*grpc.ClientConn
+	serverClients   map[string]pbserver.JayceServerServiceClient
+	registros       map[string]Registro
 	inconsistencias []Consulta
 }
 
@@ -55,34 +55,30 @@ func NewJayce() *Jayce {
 }
 
 func (j *Jayce) VerificarMonotonicidad(region, producto string, nuevoReloj *pbserver.VectorClock) bool {
-    key := region + "-" + producto
-    registro, existe := j.registros[key]
-    if !existe {
-        return true // Si no hay registro previo, la lectura es válida
-    }
+	key := region + "-" + producto
+	registro, existe := j.registros[key]
+	if !existe {
+		return true // Si no hay registro previo, la lectura es válida
+	}
 
-    // Compara los valores de los relojes vectoriales
+	// Compara los valores de los relojes vectoriales
 
-    if nuevoReloj.Server1 < registro.RelojVectorial.Server1 || nuevoReloj.Server2 < registro.RelojVectorial.Server2 || nuevoReloj.Server3 < registro.RelojVectorial.Server3{
-        return false // Retrocede en el tiempo
-    }
-    
+	if nuevoReloj.Server1 < registro.RelojVectorial.Server1 || nuevoReloj.Server2 < registro.RelojVectorial.Server2 || nuevoReloj.Server3 < registro.RelojVectorial.Server3 {
+		return false // Retrocede en el tiempo
+	}
 
-    return true // La lectura es consistente
+	return true // La lectura es consistente
 }
-
 
 func (j *Jayce) ActualizarRegistro(region, producto string, res *pbserver.JayceResponse, servidor string) {
-    key := region + "-" + producto
-    j.registros[key] = Registro{
-        UltimaRespuesta: res,
-        RelojVectorial:  res.VectorClock,
-		UltimoServidor: servidor,
-    }
-    log.Printf("Registro actualizado: Región: %s, Producto: %s, Reloj Vectorial asiciado a esta region: {Server1: %d, Server2: %d, Server3: %d}", region, producto, res.VectorClock.Server1,res.VectorClock.Server2,res.VectorClock.Server3)
+	key := region + "-" + producto
+	j.registros[key] = Registro{
+		UltimaRespuesta: res,
+		RelojVectorial:  res.VectorClock,
+		UltimoServidor:  servidor,
+	}
+	log.Printf("Registro actualizado: Región: %s, Producto: %s, Reloj Vectorial asiciado a esta region: {Server1: %d, Server2: %d, Server3: %d}", region, producto, res.VectorClock.Server1, res.VectorClock.Server2, res.VectorClock.Server3)
 }
-
-
 
 // ObtenerProducto envía una solicitud de consulta al Broker para obtener el puerto del servidor asignado
 func (j *Jayce) ObtenerServidor(region, product string) (*pb.JayceRequest, string, error) {
@@ -123,40 +119,38 @@ func (j *Jayce) ObtenerServidor(region, product string) (*pb.JayceRequest, strin
 	fmt.Printf("Producto consultado: %s en %s\n", product, region)
 	fmt.Printf("Mensaje del Broker: %s\n", puerto)
 
-
 	return req, puerto, nil
 }
 
 func (j *Jayce) getServerClient(direccion string) pbserver.JayceServerServiceClient {
-    if client, exists := j.serverClients[direccion]; exists {
-        return client // Reutiliza el cliente si ya existe
-    }
+	if client, exists := j.serverClients[direccion]; exists {
+		return client // Reutiliza el cliente si ya existe
+	}
 
-    conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
-    if err != nil {
-        log.Fatalf("No se pudo conectar al servidor: %v", err)
-    }
+	conn, err := grpc.Dial(direccion, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("No se pudo conectar al servidor: %v", err)
+	}
 
-    // Almacena la conexión y el cliente en el pool
-    j.connPool[direccion] = conn
-    client := pbserver.NewJayceServerServiceClient(conn)
-    j.serverClients[direccion] = client
+	// Almacena la conexión y el cliente en el pool
+	j.connPool[direccion] = conn
+	client := pbserver.NewJayceServerServiceClient(conn)
+	j.serverClients[direccion] = client
 
-    return client
+	return client
 }
 
 func (j *Jayce) CloseConnections() {
-    for _, conn := range j.connPool {
-        if err := conn.Close(); err != nil {
-            log.Printf("Error al cerrar la conexión: %v", err)
-        }
-    }
+	for _, conn := range j.connPool {
+		if err := conn.Close(); err != nil {
+			log.Printf("Error al cerrar la conexión: %v", err)
+		}
+	}
 }
 
-
-func (j *Jayce) ObtenerProducto(region, product string) (error) {
+func (j *Jayce) ObtenerProducto(region, product string) error {
 	req := &pbserver.JayceRequest{
-		Region: region,
+		Region:      region,
 		ProductName: product,
 	}
 
@@ -168,7 +162,6 @@ func (j *Jayce) ObtenerProducto(region, product string) (error) {
 	client := j.getServerClient(direccion)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-
 
 	log.Printf("Enviando solicitud al Servidor: Región: %s, Producto: %s", req.Region, req.ProductName)
 	res, err := client.ObtenerProducto(ctx, req)
@@ -182,10 +175,10 @@ func (j *Jayce) ObtenerProducto(region, product string) (error) {
 	if !j.VerificarMonotonicidad(region, product, res.VectorClock) {
 		log.Printf("Inconsistencia detectada: Región: %s, Producto: %s, Reloj recibido: %v, Último reloj: %v",
 			region, product, res.VectorClock, j.registros[region+"-"+product].RelojVectorial)
-	
+
 		// Registrar inconsistencia para análisis posterior
 		j.inconsistencias = append(j.inconsistencias, Consulta{Solicitud: req, Respuesta: res, Error: fmt.Errorf("lectura no consistente")})
-	
+
 		return fmt.Errorf("lectura no consistente: retrocede en el tiempo para Región: %s, Producto: %s", region, product)
 	}
 
@@ -195,25 +188,24 @@ func (j *Jayce) ObtenerProducto(region, product string) (error) {
 
 	vectorClock := res.VectorClock
 
-	log.Printf("Respuesta del Servidor: Cantidad: %v, Reloj Vectorial asiciado a esta region: {Server1: %d, Server2: %d, Server3: %d}", cantidad, vectorClock.Server1,vectorClock.Server2,vectorClock.Server3)
+	log.Printf("Respuesta del Servidor: Cantidad: %v, Reloj Vectorial asiciado a esta region: {Server1: %d, Server2: %d, Server3: %d}", cantidad, vectorClock.Server1, vectorClock.Server2, vectorClock.Server3)
 
 	j.AlmacenarConsulta(req, res, err)
 
 	return err
 }
 func (j *Jayce) MostrarInconsistencias() {
-    if len(j.inconsistencias) == 0 {
-        log.Println("No se detectaron inconsistencias.")
-        return
-    }
+	if len(j.inconsistencias) == 0 {
+		log.Println("No se detectaron inconsistencias.")
+		return
+	}
 
-    log.Println("Inconsistencias detectadas:")
-    for i, inconsistencia := range j.inconsistencias {
-        log.Printf("[%d] Región: %s, Producto: %s, Error: %v",
-            i+1, inconsistencia.Solicitud.Region, inconsistencia.Solicitud.ProductName, inconsistencia.Error)
-    }
+	log.Println("Inconsistencias detectadas:")
+	for i, inconsistencia := range j.inconsistencias {
+		log.Printf("[%d] Región: %s, Producto: %s, Error: %v",
+			i+1, inconsistencia.Solicitud.Region, inconsistencia.Solicitud.ProductName, inconsistencia.Error)
+	}
 }
-
 
 // AlmacenarConsulta guarda la solicitud y la respuesta en la memoria si no hay error
 func (j *Jayce) AlmacenarConsulta(req *pbserver.JayceRequest, res *pbserver.JayceResponse, err error) {
@@ -225,7 +217,7 @@ func (j *Jayce) AlmacenarConsulta(req *pbserver.JayceRequest, res *pbserver.Jayc
 	}
 }
 
-func menu(j *Jayce){
+func menu(j *Jayce) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		log.Print("Quiere obtener un producto?")
@@ -249,7 +241,7 @@ func menu(j *Jayce){
 			scanner1.Scan()
 			producto := strings.TrimSpace(scanner1.Text())
 
-			err1:= j.ObtenerProducto(region, producto)
+			err1 := j.ObtenerProducto(region, producto)
 			if err1 != nil {
 				log.Printf("Error en la peticion de servidor(FUNCION OBTENER PRODUCTOS): %v", err1)
 			} else {
