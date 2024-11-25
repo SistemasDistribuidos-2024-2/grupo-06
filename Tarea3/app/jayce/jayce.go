@@ -74,14 +74,12 @@ func (j *Jayce) VerificarMonotonicidad(region, producto string, nuevoReloj *pbse
 
 func (j *Jayce) ActualizarRegistro(region, producto string, res *pbserver.JayceResponse, servidor string) {
     key := region + "-" + producto
-	log.Print("ACTUALIZAR REGISTRO")
-	log.Print(key)
     j.registros[key] = Registro{
         UltimaRespuesta: res,
         RelojVectorial:  res.VectorClock,
 		UltimoServidor: servidor,
     }
-    log.Printf("Registro actualizado: Región: %s, Producto: %s, Reloj: %v", region, producto, res.VectorClock)
+    log.Printf("Registro actualizado: Región: %s, Producto: %s, Reloj Vector: {Server1: %d, Server2: %d, Server3: %d}:", region, producto, res.VectorClock.Server1,res.VectorClock.Server2,res.VectorClock.Server3)
 }
 
 
