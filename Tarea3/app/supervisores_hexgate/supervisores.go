@@ -96,11 +96,6 @@ func (s *Supervisor) EnviarSolicitudAServidor(direccion string, req *hexpb.Super
 	}
 
 	// Procesar la solicitud
-	log.Print(req)
-	if req.OperationType == hexpb.OperationType_ACTUALIZAR {
-		log.Print("RENOMBRAR")
-		log.Print(req.ProductName)
-	}
 	res, err := client.HandleRequest(ctx, req)
 	if err != nil {
 		log.Fatalf("Error al procesar la solicitud en el Servidor Hextech: %v", err)
@@ -218,7 +213,6 @@ func esConsistente(v1, v2 *hexpb.VectorClock) bool {
 
 // **Operaciones del Supervisor**
 func (s *Supervisor) AgregarProducto(region, producto string, valor int32) {
-	log.Print("Agregando producto...")
 	direccion := s.GetServer(region)
 	req := &hexpb.SupervisorRequest{
 		Region:        region,
@@ -226,7 +220,6 @@ func (s *Supervisor) AgregarProducto(region, producto string, valor int32) {
 		OperationType: hexpb.OperationType_AGREGAR,
 		Value:         &valor,
 	}
-	log.Print("lista la direccion")
 	s.EnviarSolicitudAServidor(direccion, req)
 }
 
