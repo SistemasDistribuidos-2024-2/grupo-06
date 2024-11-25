@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option go_package = "grpc/jayce-broker";
+
+package jaycebroker;
+
+// Servicio que define las operaciones entre Jayce y el Broker
+service JayceBrokerService {
+    // Método para obtener la información de un producto en una región específica
+    rpc ObtenerServidor(JayceRequest) returns (JayceResponse);
+}
+
+// Mensaje de solicitud enviado desde Jayce al Broker
+message JayceRequest {
+    // Nombre de la región a consultar (ej. Noxus)
+    string region = 1;
+
+    // Nombre del producto a consultar (ej. Vino)
+    string product_name = 2;
+}
+
+// Mensaje de respuesta enviado desde el Broker a Jayce
+message JayceResponse {
+    // Estado de la respuesta: OK o ERROR
+    ResponseStatus status = 1;
+
+    // Mensaje opcional en caso de error o redirección
+    optional string message = 2;
+}
+
+// Estado de la respuesta
+enum ResponseStatus {
+    OK = 0;
+    ERROR = 1;
+}

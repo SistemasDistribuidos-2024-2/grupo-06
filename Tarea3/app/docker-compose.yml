@@ -1,0 +1,70 @@
+version: "3"
+services:
+  supervisor:
+    build: ./supervisores_hexgate
+    container_name: container_supervisores
+    networks:
+      - network_tarea
+    stdin_open: true
+    tty: true
+  broker:
+    build: ./broker
+    container_name: container_broker
+    ports:
+      - "50054:50054"
+    networks:
+      - network_tarea
+  jayce:
+    build: ./jayce
+    container_name: container_jayce
+    networks:
+      - network_tarea
+    stdin_open: true
+    tty: true
+
+  # Servidor Hextech 1
+  hextech1:
+    build: ./servidores_hextech
+    container_name: container_hextech1
+    networks:
+      - network_tarea
+    ports:
+      - "50051:50051" # Exponiendo el puerto del servidor Hextech 1
+    environment:
+      - SERVER_ID=1
+    volumes:
+      - ./logs/hextech1:/app/logs
+      - ./mercancias/hextech1:/app/mercancias
+
+  # Servidor Hextech 2
+  hextech2:
+    build: ./servidores_hextech
+    container_name: container_hextech2
+    networks:
+      - network_tarea
+    ports:
+      - "50052:50052" # Exponiendo el puerto del servidor Hextech 2
+    environment:
+      - SERVER_ID=2
+    volumes:
+      - ./logs/hextech2:/app/logs
+      - ./mercancias/hextech2:/app/mercancias
+
+  # Servidor Hextech 3
+  hextech3:
+    build: ./servidores_hextech
+    container_name: container_hextech3
+    networks:
+      - network_tarea
+    ports:
+      - "50053:50053" # Exponiendo el puerto del servidor Hextech 3
+    environment:
+      - SERVER_ID=3
+    volumes:
+      - ./logs/hextech3:/app/logs
+      - ./mercancias/hextech3:/app/mercancias
+
+# Red EXTERNA que se crea mediante docker
+networks:
+  network_tarea:
+    external: true
