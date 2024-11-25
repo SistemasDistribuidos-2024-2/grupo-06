@@ -1,10 +1,10 @@
 # Comando para crear e inciar el servicio de servidores
 docker-servidor1:
-	@docker-compose ./app/docker-compose.yml run hextech1
+	@docker-compose -f ./app/docker-compose.yml run -d hextech1
 docker-servidor2:
-	@docker-compose ./app/docker-compose.yml run hextech2
+	@docker-compose -f ./app/docker-compose.yml run -d hextech2
 docker-servidor3:
-	@docker-compose ./app/docker-compose.yml run hextech3
+	@docker-compose -f ./app/docker-compose.yml run -d hextech3
 
 # Comando para crear e inciar  el servicio de jayce
 docker-jayce:
